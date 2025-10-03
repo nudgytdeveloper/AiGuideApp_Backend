@@ -96,6 +96,7 @@ app.get("/generate", async (req, res) => {
       await db.collection("sessions").doc(payload.sessionId).set({
         chatData: initialData,
         createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       })
       persisted = true
     } catch (e) {
