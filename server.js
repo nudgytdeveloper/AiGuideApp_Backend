@@ -47,9 +47,9 @@ function generateSessionId() {
   const hmac = crypto
     .createHmac("sha256", PRIVATE_KEY)
     .update(`${timestamp}:${nonce}`)
-    .digest("base64url")
+    .digest("base64url") // base64 gives shorter length
     .slice(0, 12)
-  return hmac
+  return { sessionId: hmac }
 }
 
 // List all sessions
