@@ -85,6 +85,7 @@ app.get("/", async (req, res) => {
 })
 
 app.get("/generate", async (req, res) => {
+  // TODO: fix the issue as current chat data is stored as [Object object] instead of object itself
   const providedChatData = req.query.chatData,
     initialData = providedChatData || "Initial Data - tony",
     payload = generateSessionId()
@@ -135,6 +136,7 @@ app.get("/access", async (req, res) => {
         message: "Session does not exist",
       })
     }
+    // TODO: add checking whether session last updated is within 1 hour or not, if not then its invalidate the session
     statusCode = Success
     return res.status(statusCode).json({
       ok: true,
