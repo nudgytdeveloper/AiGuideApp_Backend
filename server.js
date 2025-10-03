@@ -43,12 +43,13 @@ const PRIVATE_KEY = "nudgytSCAI1"
 
 function generateSessionId() {
   const timestamp = Date.now().toString()
-  const nonce = crypto.randomBytes(16).toString("hex")
+  const nonce = crypto.randomBytes(8).toString("hex")
   const hmac = crypto
     .createHmac("sha256", PRIVATE_KEY)
     .update(`${timestamp}:${nonce}`)
-    .digest("hex")
-  return { sessionId: hmac }
+    .digest("base64url")
+    .slice(0, 12)
+  return hmac
 }
 
 // List all sessions
@@ -93,8 +94,8 @@ app.get("/generate", async (req, res) => {
   if (db) {
     try {
       await db.collection("sessions").doc(payload.sessionId).set({
-        createdAt: FieldValue.serverTimestamp(),
         chatData: initialData,
+        createdAt: FieldValue.serverTimestamp(),
       })
       persisted = true
     } catch (e) {
@@ -112,7 +113,7 @@ app.get("/generate", async (req, res) => {
 })
 
 // Check if a session exists
-app.get("/check", async (req, res) => {
+app.get("/access", async (req, res) => {
   let statusCode
   try {
     const { session } = req.query
