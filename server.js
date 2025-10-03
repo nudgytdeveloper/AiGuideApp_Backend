@@ -10,7 +10,7 @@ import {
   InternalServerError,
   NotFound,
   Success,
-} from "./constant/StatusCode"
+} from "./constant/StatusCode.js"
 
 const app = express()
 const PORT = process.env.PORT || 3000
