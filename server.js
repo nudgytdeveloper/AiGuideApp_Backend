@@ -48,7 +48,7 @@ function generateSessionId() {
     .createHmac("sha256", PRIVATE_KEY)
     .update(`${timestamp}:${nonce}`)
     .digest("hex")
-  return { sessionId: hmac, issuedAt: Number(timestamp) }
+  return { sessionId: hmac }
 }
 
 // List all sessions
@@ -60,7 +60,7 @@ app.get("/", async (req, res) => {
 
     const snap = await db
       .collection("sessions")
-      .orderBy("issuedAt", "desc")
+      .orderBy("createdAt")
       .limit(limit)
       .get()
 
@@ -93,7 +93,6 @@ app.get("/generate", async (req, res) => {
   if (db) {
     try {
       await db.collection("sessions").doc(payload.sessionId).set({
-        issuedAt: payload.issuedAt,
         createdAt: FieldValue.serverTimestamp(),
         chatData: initialData,
       })
