@@ -1,6 +1,6 @@
 # Ai Guide App's backend
 
-Express.js API that serves as backend for both Ai Guide App and Hologram app
+Express.js API that serves as backend for both Ai Guide App and Hologram app.
 
 ## IF you wan to run locally, kindly follw below:-
 
