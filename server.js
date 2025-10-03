@@ -207,4 +207,6 @@ app.post("/update", async (req, res) => {
   }
 })
 
+app.get("/healthz", (_req, res) => res.json({ ok: true, statusCode: Success }))
+
 app.listen(PORT, () => console.log(`Server http://localhost:${PORT}`))
