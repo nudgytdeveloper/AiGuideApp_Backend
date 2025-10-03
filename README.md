@@ -1,7 +1,9 @@
-# Nudgyt's AI Guide Data flow demo app
-Express.js API that serves as POC for data flow bettween AI guide web app and AI Hologram
+# Ai Guide App's backend
+
+Express.js API that serves as backend for both Ai Guide App and Hologram app
 
 ## IF you wan to run locally, kindly follw below:-
+
 ```bash
 # install deps
 npm install
@@ -12,15 +14,17 @@ export GOOGLE_APPLICATION_CREDENTIALS=/abs/path/to/serviceAccount.json
 
 # start
 npm start
-# or with autoreload
+# or with auto hot reload..
 npm run dev
 ```
 
 ## Firestore setup
+
 - Option A: set FIREBASE_SERVICE_ACCOUNT (base64 JSON service account)
 - Option B: set GOOGLE_APPLICATION_CREDENTIALS to path of serviceAccount.json
 
 ## Example response
+
 ```json
 {
   "sessionId": "abcd...",
@@ -31,11 +35,13 @@ npm run dev
 ```
 
 ## Deploy to Render (optional)
+
 1. Push this repo to GitHub.
 2. On Render, create a **Web Service** from the repo.
 3. Use `Node` runtime, build command: `npm install`, start command: `npm start`.
 
 ## Docker
+
 ```bash
 # build
 docker build -t express-session-id-api .
