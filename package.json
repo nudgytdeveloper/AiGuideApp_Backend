@@ -1,0 +1,24 @@
+{
+  "name": "express-session-id-api",
+  "version": "1.1.0",
+  "description": "Express.js API that serves as POC for data flow bettween AI guide web app and AI Hologram - tony",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "NODE_ENV=development nodemon server.js"
+  },
+  "keywords": ["express", "api", "session", "demo", "firestore"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "helmet": "^7.1.0",
+    "morgan": "^1.10.0",
+    "firebase-admin": "^12.5.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}

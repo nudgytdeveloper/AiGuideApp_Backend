@@ -1,0 +1,9 @@
+node_modules/
+.env
+.env.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+.idea/
+.vscode/scaiguide-firebase-adminsdk-fbsvc-f7d6575644.json
