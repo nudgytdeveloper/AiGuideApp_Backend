@@ -7,3 +7,5 @@ yarn-error.log*
 .DS_Store
 .idea/
 .vscode/scaiguide-firebase-adminsdk-fbsvc-f7d6575644.json
+e2e-report.json
+reports/
