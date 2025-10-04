@@ -5,31 +5,20 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon",
     "start": "node server.js",
-    "test": "vitest run",
-    "test:ui": "vitest"
+    "dev": "NODE_ENV=development nodemon server.js"
   },
-  "keywords": [
-    "express",
-    "api",
-    "session",
-    "demo",
-    "firestore"
-  ],
+  "keywords": ["express", "api", "session", "demo", "firestore"],
   "author": "",
   "license": "MIT",
   "dependencies": {
     "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
     "express": "^4.19.2",
-    "firebase-admin": "^12.5.0",
     "helmet": "^7.1.0",
-    "morgan": "^1.10.0"
+    "morgan": "^1.10.0",
+    "firebase-admin": "^12.5.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10",
-    "supertest": "^7.1.4",
-    "vitest": "^3.2.4"
+    "nodemon": "^3.1.0"
   }
 }
