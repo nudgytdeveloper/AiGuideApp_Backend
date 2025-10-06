@@ -84,32 +84,30 @@ app.get("/", async (req, res) => {
   }
 })
 
-app.get("/generate", async (req, res) => {
-  // TODO: fix the issue as current chat data is stored as [Object object] instead of object itself
-  const providedChatData = req.query.chatData,
-    initialData = providedChatData || "Initial Data - tony",
-    payload = generateSessionId()
-  let persisted = false,
-    error = null,
-    statusCode
-  if (db) {
-    try {
-      await db.collection("sessions").doc(payload.sessionId).set({
-        chatData: initialData,
-        createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
-      })
-      persisted = true
-    } catch (e) {
-      error = e.message
-    }
+app.post("/generate", async (req, res) => {
+  const chatData = req.body?.chatData || {}
+  const payload = generateSessionId()
+  let persisted = false
+  let error = null
+
+  try {
+    if (!db) throw new Error("Firestore not initialized")
+
+    await db.collection("sessions").doc(payload.sessionId).set({
+      chatData,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    })
+    persisted = true
+  } catch (e) {
+    error = e.message
   }
-  statusCode = Success
-  res.status(statusCode).json({
+
+  res.status(Success).json({
     ok: true,
-    statusCode: statusCode,
+    statusCode: Success,
     ...payload,
-    chatData: initialData,
+    chatData,
     firestore: { enabled: !!db, persisted, error },
   })
 })
