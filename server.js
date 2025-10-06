@@ -208,6 +208,32 @@ app.post("/update", async (req, res) => {
   }
 })
 
+app.post("/api/chat", async (req, res) => {
+  const { messages } = req.body
+  if (!process.env.OPENAI_API_KEY) {
+    return res
+      .status(InternalServerError)
+      .json({ error: "OPENAI_API_KEY not set" })
+  }
+  const r = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      messages: messages,
+      max_tokens: 150,
+      temperature: 0.7,
+      presence_penalty: 0.1,
+      frequency_penalty: 0.1,
+    }),
+  })
+  const data = await r.json()
+  res.json(data)
+})
+
 app.get("/healthz", (_req, res) => res.json({ ok: true, statusCode: Success }))
 
 app.listen(PORT, () => console.log(`Server http://localhost:${PORT}`))
