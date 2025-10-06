@@ -208,7 +208,7 @@ app.post("/update", async (req, res) => {
   }
 })
 
-app.post("/api/chat", async (req, res) => {
+app.post("/chat", async (req, res) => {
   const { messages } = req.body
   if (!process.env.OPENAI_API_KEY) {
     return res
