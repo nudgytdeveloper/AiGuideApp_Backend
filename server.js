@@ -11,6 +11,7 @@ import {
   NotFound,
   Success,
 } from "./constant/StatusCode.js"
+import { NotEnd } from "./constant/EndReason.js"
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -49,19 +50,19 @@ function generateSessionId() {
     .update(`${timestamp}:${nonce}`)
     .digest("base64url") // base64 gives shorter length
     .slice(0, 12)
-  return { sessionId: hmac }
+  return { session_id: hmac }
 }
 
-// List all sessions
-app.get("/", async (req, res) => {
+// List all sessions - for Dashboard
+app.get("/api/session/", async (req, res) => {
   let statusCode
   try {
-    // Optional: support ?limit=20 to avoid huge payloads
-    const limit = Math.min(parseInt(req.query.limit || "50", 10), 200)
+    // Optional: support ?limit=999 to avoid huge payloads
+    const limit = Math.min(parseInt(req.query.limit || "999", 10), 200)
 
     const snap = await db
       .collection("sessions")
-      .orderBy("createdAt")
+      .orderBy("start_time")
       .limit(limit)
       .get()
 
@@ -72,7 +73,7 @@ app.get("/", async (req, res) => {
     statusCode = Success
     res.status(statusCode).json({
       ok: true,
-      statusCode: statusCode,
+      status_code: statusCode,
       count: sessions.length,
       sessions,
     })
@@ -84,7 +85,7 @@ app.get("/", async (req, res) => {
   }
 })
 
-app.post("/generate", async (req, res) => {
+app.post("/api/session/generate", async (req, res) => {
   const chatData = req.body?.chatData || {}
   const payload = generateSessionId()
   let persisted = false
@@ -93,10 +94,12 @@ app.post("/generate", async (req, res) => {
   try {
     if (!db) throw new Error("Firestore not initialized")
 
-    await db.collection("sessions").doc(payload.sessionId).set({
-      chatData,
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
+    await db.collection("sessions").doc(payload.session_id).set({
+      moved_ai_guide: false,
+      start_time: FieldValue.serverTimestamp(),
+      updated_at: FieldValue.serverTimestamp(),
+      chat_data: chatData,
+      end_reason: NotEnd,
     })
     persisted = true
   } catch (e) {
@@ -105,15 +108,16 @@ app.post("/generate", async (req, res) => {
 
   res.status(Success).json({
     ok: true,
-    statusCode: Success,
+    status_code: Success,
     ...payload,
-    chatData,
+    moved_ai_guide: false,
+    chat_data: chatData,
     firestore: { enabled: !!db, persisted, error },
   })
 })
 
 // Check if a session exists
-app.get("/access", async (req, res) => {
+app.get("/api/session/access", async (req, res) => {
   let statusCode
   try {
     const { session } = req.query
@@ -121,7 +125,7 @@ app.get("/access", async (req, res) => {
       statusCode = BadRequest
       return res.status(statusCode).json({
         ok: false,
-        statusCode: statusCode,
+        status_code: statusCode,
         error: "Missing query param ?session=",
       })
     }
@@ -130,7 +134,7 @@ app.get("/access", async (req, res) => {
       statusCode = NotFound
       return res.status(statusCode).json({
         ok: false,
-        statusCode: statusCode,
+        status_code: statusCode,
         message: "Session does not exist",
       })
     }
@@ -138,7 +142,7 @@ app.get("/access", async (req, res) => {
     statusCode = Success
     return res.status(statusCode).json({
       ok: true,
-      statusCode: statusCode,
+      status_code: statusCode,
       id: doc.id,
       data: doc.data(),
     })
@@ -146,12 +150,12 @@ app.get("/access", async (req, res) => {
     statusCode = InternalServerError
     res
       .status(statusCode)
-      .json({ ok: false, statusCode: statusCode, error: e.message })
+      .json({ ok: false, status_code: statusCode, error: e.message })
   }
 })
 
 // Update chatData for a session
-app.post("/update", async (req, res) => {
+app.post("/api/session/update", async (req, res) => {
   let statusCode
   try {
     const { session, chatData } = req.query
@@ -161,7 +165,7 @@ app.post("/update", async (req, res) => {
       statusCode = BadRequest
       return res.status(statusCode).json({
         ok: false,
-        statusCode: statusCode,
+        status_code: statusCode,
         error: "Missing required query params: ?session={id}&chatData={string}",
       })
     }
@@ -169,7 +173,7 @@ app.post("/update", async (req, res) => {
       statusCode = BadRequest
       return res.status(statusCode).json({
         ok: false,
-        statusCode: statusCode,
+        status_code: statusCode,
         error: "chatData must be a string",
       })
     }
@@ -181,15 +185,15 @@ app.post("/update", async (req, res) => {
       statusCode = NotFound
       return res.status(statusCode).json({
         ok: false,
-        statusCode: statusCode,
+        status_code: statusCode,
         error: "Session does not exist",
       })
     }
 
     // update the document
     await docRef.update({
-      chatData,
-      updatedAt: FieldValue.serverTimestamp(),
+      chat_data: chatData,
+      updated_at: FieldValue.serverTimestamp(),
     })
 
     //Re-fetch updated doc
@@ -197,18 +201,18 @@ app.post("/update", async (req, res) => {
     statusCode = Success
     return res.status(statusCode).json({
       ok: true,
-      statusCode: statusCode,
+      status_code: statusCode,
       message: "Chat Data updated successfully.",
     })
   } catch (e) {
     statusCode = InternalServerError
     res
       .status(statusCode)
-      .json({ ok: false, statusCode: statusCode, error: e.message })
+      .json({ ok: false, status_code: statusCode, error: e.message })
   }
 })
 
-app.post("/chat", async (req, res) => {
+app.post("/api/chat", async (req, res) => {
   const { messages } = req.body
   if (!process.env.OPENAI_API_KEY) {
     return res
