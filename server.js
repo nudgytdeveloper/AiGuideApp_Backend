@@ -86,7 +86,7 @@ app.get("/api/session/", async (req, res) => {
 })
 
 app.post("/api/session/generate", async (req, res) => {
-  const chatData = req.body?.chatData || {}
+  const chatData = req.body?.chat_data || {}
   const payload = generateSessionId()
   let persisted = false
   let error = null
