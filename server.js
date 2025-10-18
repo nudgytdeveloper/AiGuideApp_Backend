@@ -53,13 +53,34 @@ function generateSessionId() {
   return { session_id: hmac }
 }
 
-// List all sessions - for Dashboard
+// List out all sesions or specific session - for Dashboard (single session require ?session={id})
 app.get("/api/session/", async (req, res) => {
   let statusCode
   try {
-    // Optional: support ?limit=999 to avoid huge payloads
-    const limit = Math.min(parseInt(req.query.limit || "999", 10), 200)
+    const sessionId = (req.query.session || "").trim()
+    //If a specific session is requested, return only that one (or empty array if not found)
+    if (sessionId) {
+      const docSnap = await db.collection("sessions").doc(sessionId).get()
 
+      if (docSnap.exists) {
+        statusCode = Success
+        return res.status(statusCode).json({
+          ok: true,
+          status_code: statusCode,
+          ...docSnap.data(),
+        })
+      } else {
+        statusCode = NotFound
+        return res.status(statusCode).json({
+          ok: false,
+          status_code: statusCode,
+          message: "Session not found",
+        })
+      }
+    }
+
+    // Otherwise, list all sessions (with optional ?limit=)
+    const limit = Math.min(parseInt(req.query.limit || "999", 10), 200)
     const snap = await db
       .collection("sessions")
       .orderBy("start_time")
@@ -81,7 +102,7 @@ app.get("/api/session/", async (req, res) => {
     statusCode = InternalServerError
     res
       .status(statusCode)
-      .json({ ok: false, statusCode: statusCode, error: e.message })
+      .json({ ok: false, status_code: statusCode, error: e.message })
   }
 })
 
