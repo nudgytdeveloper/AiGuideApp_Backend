@@ -11,6 +11,7 @@ import {
   NotFound,
   Success,
 } from "./constant/StatusCode.js"
+import admin from "firebase-admin"
 import { NotEnd } from "./constant/EndReason.js"
 
 const app = express()
@@ -52,7 +53,7 @@ function generateSessionId() {
     .slice(0, 12)
   return { session_id: hmac }
 }
-
+// Session apis
 // List out all sesions or specific session - for Dashboard (single session require ?session={id})
 app.get("/api/session/", async (req, res) => {
   let statusCode
@@ -232,7 +233,7 @@ app.post("/api/session/update", async (req, res) => {
       .json({ ok: false, status_code: statusCode, error: e.message })
   }
 })
-
+// Chat apis
 app.post("/api/chat", async (req, res) => {
   const { messages } = req.body
   if (!process.env.OPENAI_API_KEY) {
@@ -257,6 +258,458 @@ app.post("/api/chat", async (req, res) => {
   })
   const data = await r.json()
   res.json(data)
+})
+// Rating apis
+/**
+ * GET /api/ratings
+ *
+ * Query params (all optional):
+ *  - type: "app" | "hologram"
+ *  - session_id: string
+ *  - start: ISO date (e.g., 2025-09-24T00:00:00Z)  -> created_at >= start
+ *  - end:   ISO date (e.g., 2025-09-25T00:00:00Z)  -> created_at <= end
+ *  - order: "asc" | "desc" (default "desc")
+ *  - limit: number (default 20, max 100)
+ *  - page_token: cursor string (created_at millis from last page)
+ *
+ * Response:
+ * {
+ *   "ratings": [ ...docs ],
+ *   "next_page_token": "1737465600000" | null
+ * }
+ */
+app.get("/api/rating", async (req, res) => {
+  try {
+    const {
+      type,
+      session_id,
+      start,
+      end,
+      order = "desc",
+      limit = "20",
+      page_token,
+    } = req.query
+
+    const pageSize = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100)
+    let q = db.collection("ratings")
+
+    if (type) q = q.where("type", "==", type)
+    if (session_id) q = q.where("session_id", "==", session_id)
+
+    // Date range filters use created_at (Firestore Timestamp)
+    if (start) q = q.where("created_at", ">=", new Date(start))
+    if (end) q = q.where("created_at", "<=", new Date(end))
+
+    // Order by created_at (ensure your writes set this field)
+    q = q.orderBy("created_at", order === "asc" ? "asc" : "desc")
+
+    // Cursor: pass the previous page's last created_at as millis
+    if (page_token) {
+      const millis = Number(page_token)
+      if (!Number.isNaN(millis)) {
+        q = q.startAfter(admin.firestore.Timestamp.fromMillis(millis))
+      }
+    }
+
+    const snap = await q.limit(pageSize).get()
+
+    const ratings = snap.docs.map((d) => {
+      const data = d.data()
+      return {
+        id: d.id,
+        ...data,
+        // Make created_at easy to consume; keep original too
+        ...(data.created_at?.toMillis
+          ? { created_at_millis: data.created_at.toMillis() }
+          : {}),
+      }
+    })
+
+    // next page token (use last item's created_at)
+    let next_page_token = null
+    if (ratings.length === pageSize) {
+      const last = ratings[ratings.length - 1]
+      const lastMillis =
+        last.created_at_millis ??
+        (last.created_at?.toMillis ? last.created_at.toMillis() : null)
+      if (lastMillis) next_page_token = String(lastMillis)
+    }
+
+    return res.status(200).json({ ratings, next_page_token })
+  } catch (err) {
+    // returns a helpful link here if Firestore needs an index for filters
+    console.error("GET /api/ratings error:", err)
+    return res
+      .status(500)
+      .json({ error: "Internal error", details: String(err) })
+  }
+})
+// Seed helpers (unable to move to other file for now due to firebase)
+let feedbackSeq = 1
+export function makeFeedbackId(date = new Date()) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, "0")
+  const d = String(date.getDate()).padStart(2, "0")
+  const seq = String(feedbackSeq++).padStart(4, "0")
+  return `fb-${y}${m}${d}-${seq}`
+}
+
+export function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min
+}
+
+export const SAMPLE_MESSAGES = [
+  "The hologram guide was very engaging and helped me understand the exhibits better. Would love more interactive content!",
+  "Great experience overall—clear directions and helpful tips.",
+  "Kids loved it! Could add more hands-on demos.",
+  "Audio was a bit soft in the hall, but the guide was informative.",
+  "Impressive tech and easy to use. Will visit again!",
+]
+
+export function randomSessionId(prefix = "sess") {
+  // 18-char hex-ish, similar length to your sample
+  return `${prefix}-${Math.random().toString(16).slice(2, 11)}${Math.random()
+    .toString(16)
+    .slice(2, 9)}`
+}
+
+/**
+ * Generate seeded docs
+ * options:
+ *  - count_app: number of "app" docs
+ *  - count_hologram: number of "hologram" docs
+ *  - session_prefix: string for generated session_id
+ *  - days_back: spread random created_at in last N days (default 30)
+ *  - fixed_session_id: if provided, use this for all docs
+ */
+function buildSeedDocs({
+  count_app = 2,
+  count_hologram = 2,
+  session_prefix = "sess",
+  days_back = 30,
+  fixed_session_id,
+}) {
+  const docs = []
+  const total = count_app + count_hologram
+
+  for (let i = 0; i < total; i++) {
+    const isApp = i < count_app
+    const dayOffset = randInt(0, Math.max(0, days_back))
+    const createdDate = new Date()
+    createdDate.setDate(createdDate.getDate() - dayOffset)
+    createdDate.setHours(randInt(9, 18), randInt(0, 59), randInt(0, 59), 0)
+
+    const feedback_id = makeFeedbackId(createdDate)
+    const session_id =
+      fixed_session_id ?? randomSessionId(session_prefix || "sess")
+    const created_at = admin.firestore.Timestamp.fromDate(createdDate)
+
+    if (isApp) {
+      docs.push({
+        feedback_id,
+        session_id,
+        type: "app",
+        q1_score: randInt(1, 5),
+        q2_score: randInt(1, 5),
+        q3_score: randInt(1, 5),
+        feedback_msg: SAMPLE_MESSAGES[randInt(0, SAMPLE_MESSAGES.length - 1)],
+        created_at,
+      })
+    } else {
+      docs.push({
+        feedback_id,
+        session_id,
+        type: "hologram",
+        score: randInt(1, 5),
+        created_at,
+      })
+    }
+  }
+  return docs
+}
+
+async function writeInBatches(collectionPath, docs, idField = "feedback_id") {
+  const CHUNK = 450 // ≤ 500 writes per commit
+  for (let i = 0; i < docs.length; i += CHUNK) {
+    const batch = db.batch()
+    const slice = docs.slice(i, i + CHUNK)
+    slice.forEach((doc) => {
+      const id = doc[idField] || db.collection(collectionPath).doc().id
+      const ref = db.collection(collectionPath).doc(id)
+      batch.set(ref, doc, { merge: false })
+    })
+    await batch.commit()
+  }
+}
+
+// ===== Seed Endpoint =====
+/**
+ * POST /api/ratings/seed
+ * Body or query (all optional):
+ *  - count_app: number (default 20)
+ *  - count_hologram: number (default 20)
+ *  - session_prefix: string (default "sess")
+ *  - days_back: number (default 30) — randomizes created_at within last N days
+ *  - fixed_session_id: string — if set, all docs use this session_id
+ *
+ * Response: { inserted: number, counts: { app, hologram }, sample_ids: string[] }
+ */
+app.post("/api/rating/seed", async (req, res) => {
+  try {
+    // if (!SEED_ENABLED) {
+    //   return res
+    //     .status(403)
+    //     .json({ error: "Seeding disabled. Set SEED_ENABLED=true to allow." });
+    // }
+
+    const {
+      count_app,
+      count_hologram,
+      session_prefix,
+      days_back,
+      fixed_session_id,
+    } = { ...req.query, ...req.body }
+
+    const counts = {
+      app: Math.max(0, parseInt(count_app ?? 2, 10) || 0),
+      hologram: Math.max(0, parseInt(count_hologram ?? 2, 10) || 0),
+    }
+
+    const docs = buildSeedDocs({
+      count_app: counts.app,
+      count_hologram: counts.hologram,
+      session_prefix,
+      days_back: parseInt(days_back ?? 30, 10) || 30,
+      fixed_session_id:
+        typeof fixed_session_id === "string" && fixed_session_id.trim()
+          ? fixed_session_id.trim()
+          : undefined,
+    })
+
+    await writeInBatches("ratings", docs)
+
+    return res.status(Success).json({
+      inserted: docs.length,
+      counts,
+      sample_ids: docs.slice(0, 5).map((d) => d.feedback_id),
+    })
+  } catch (err) {
+    console.error("POST /api/ratings/seed error:", err)
+    return res
+      .status(InternalServerError)
+      .json({ error: "Internal error", details: String(err) })
+  }
+})
+// Notification apis
+/** Helper: normalize Firestore Timestamp/string/Date to ISO8601 */
+function toISO(value) {
+  if (!value) return undefined
+  if (typeof value?.toDate === "function") return value.toDate().toISOString()
+  if (typeof value === "string") return value
+  try {
+    return new Date(value).toISOString()
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * GET /api/notifications
+ *
+ * Query params:
+ * - type (optional)
+ * - priority (optional)
+ * - is_read (optional)
+ * - limit (default 50)
+ * - order (default "desc")
+ * - page_token (optional): cursor (created_at in milliseconds)
+ */
+app.get("/api/notification", async (req, res) => {
+  try {
+    const {
+      type,
+      priority,
+      is_read,
+      limit = "20",
+      order = "desc",
+      page_token,
+    } = req.query
+
+    const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 200)
+    const orderDir = order === "asc" ? "asc" : "desc"
+
+    let q = db.collection("notifications")
+
+    if (type) q = q.where("type", "==", type)
+    if (priority) q = q.where("priority", "==", priority)
+
+    if (typeof is_read === "string") {
+      const flag = is_read.toLowerCase() === "true"
+      if (["true", "false"].includes(is_read.toLowerCase())) {
+        q = q.where("is_read", "==", flag)
+      }
+    }
+
+    q = q.orderBy("created_at", orderDir)
+
+    if (page_token) {
+      const cursorDate = new Date(parseInt(page_token, 10))
+      if (!isNaN(cursorDate.valueOf())) {
+        q = q.startAfter(cursorDate)
+      }
+    }
+
+    q = q.limit(limitNum)
+
+    const snap = await q.get()
+
+    const notifications = snap.docs.map((doc) => {
+      const d = doc.data() || {}
+
+      const payload = {
+        id: d.id || doc.id,
+        title: d.title || "",
+        body: d.body || "",
+        date_time: toISO(d.date_time),
+        created_at: toISO(d.created_at),
+        ...(d.type ? { type: d.type } : {}),
+        ...(d.priority ? { priority: d.priority } : {}),
+        is_read: Boolean(d.is_read),
+        ...(d.location ? { location: d.location } : {}),
+        ...(d.deep_link ? { deep_link: d.deep_link } : {}),
+      }
+
+      return { notification: payload }
+    })
+
+    // New page_token: created_at in milliseconds
+    const lastItem = notifications[notifications.length - 1]
+    const next_page_token = lastItem
+      ? new Date(lastItem.notification.created_at).getTime().toString()
+      : null
+
+    res.status(200).json({
+      notifications,
+      page_info: {
+        limit: limitNum,
+        order: orderDir,
+        next_page_token,
+        has_more: notifications.length === limitNum,
+      },
+    })
+  } catch (err) {
+    console.error("GET /api/notifications error:", err)
+    res.status(500).json({
+      error: {
+        code: "notifications_fetch_failed",
+        message: "Failed to fetch notifications.",
+        details:
+          process.env.NODE_ENV === "production" ? undefined : String(err),
+      },
+    })
+  }
+})
+// Notification Seed end points..
+/**
+ * POST /api/notifications/seed
+ *
+ * Seeds 5 mock notifications into Firestore.
+ * Each notification includes id, title, body, date_time, created_at, type, priority, is_read, location, deep_link.
+ */
+app.post("/api/notification/seed", async (req, res) => {
+  try {
+    const now = new Date()
+    const baseTime = now.getTime()
+
+    const mockNotifications = [
+      {
+        id: "notif_20251020_001",
+        title: "New Exhibit Alert!",
+        body: "Come explore our latest AI & Robotics exhibit in Hall D. Limited-time guided tours available.",
+        date_time: new Date(baseTime - 3600 * 1000).toISOString(),
+        created_at: new Date(baseTime - 7200 * 1000).toISOString(),
+        type: "exhibit_update",
+        priority: "high",
+        is_read: false,
+        location: "Hall D",
+        deep_link: "/exhibits/ai-robotics",
+      },
+      {
+        id: "notif_20251020_002",
+        title: "Maintenance Notice",
+        body: "The Hologram Theatre will be temporarily closed for maintenance until 3 PM today.",
+        date_time: new Date(baseTime - 1800 * 1000).toISOString(),
+        created_at: new Date(baseTime - 3600 * 1000).toISOString(),
+        type: "facility_notice",
+        priority: "normal",
+        is_read: false,
+        location: "Hall B",
+        deep_link: "/facilities/hologram-theatre",
+      },
+      {
+        id: "notif_20251020_003",
+        title: "Exclusive Workshop",
+        body: "Join our hands-on AI coding workshop this weekend! Limited seats available.",
+        date_time: new Date(baseTime + 86400 * 1000).toISOString(),
+        created_at: new Date(baseTime - 3000 * 1000).toISOString(),
+        type: "event_invite",
+        priority: "high",
+        is_read: false,
+        location: "Innovation Lab",
+        deep_link: "/events/ai-workshop",
+      },
+      {
+        id: "notif_20251020_004",
+        title: "General Announcement",
+        body: "Welcome to Science Centre Singapore! Don’t miss the daily guided tour at 10 AM.",
+        date_time: new Date(baseTime - 600 * 1000).toISOString(),
+        created_at: new Date(baseTime - 1200 * 1000).toISOString(),
+        type: "general",
+        priority: "low",
+        is_read: true,
+        location: "Lobby",
+        deep_link: "/tours/daily",
+      },
+      {
+        id: "notif_20251020_005",
+        title: "App Update Available",
+        body: "A new version of the AI Guide App is available. Update now for improved performance!",
+        date_time: new Date(baseTime).toISOString(),
+        created_at: new Date(baseTime - 500 * 1000).toISOString(),
+        type: "app_update",
+        priority: "normal",
+        is_read: false,
+        location: "Mobile App",
+        deep_link: "/app/update",
+      },
+    ]
+
+    const batch = db.batch()
+    const collectionRef = db.collection("notifications")
+
+    mockNotifications.forEach((notif) => {
+      const docRef = collectionRef.doc(notif.id)
+      batch.set(docRef, notif)
+    })
+
+    await batch.commit()
+
+    res.status(201).json({
+      message: "✅ Seeded 5 mock notifications successfully.",
+      count: mockNotifications.length,
+      ids: mockNotifications.map((n) => n.id),
+    })
+  } catch (err) {
+    console.error("POST /api/notifications/seed error:", err)
+    res.status(InternalServerError).json({
+      error: {
+        code: "notifications_seed_failed",
+        message: "Failed to seed notifications.",
+        details:
+          process.env.NODE_ENV === "production" ? undefined : String(err),
+      },
+    })
+  }
 })
 
 app.get("/healthz", (_req, res) => res.json({ ok: true, statusCode: Success }))
