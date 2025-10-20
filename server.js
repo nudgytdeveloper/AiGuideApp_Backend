@@ -712,6 +712,167 @@ app.post("/api/notification/seed", async (req, res) => {
   }
 })
 
+// Routes taken api
+// GET /api/route?session_id=...
+// session_id is required..
+app.get("/api/route", async (req, res) => {
+  try {
+    const { session_id } = req.query
+
+    if (!session_id || typeof session_id !== "string" || !session_id.trim()) {
+      return res.status(400).json({
+        error: "Missing required query param: session_id",
+      })
+    }
+
+    const db = admin.firestore()
+
+    const colRef = db.collection("user_route")
+
+    // If you have an index, you can add .orderBy("started_at", "asc")
+    const snap = await colRef.where("session_id", "==", session_id).get()
+
+    const routes = snap.docs.map((doc) => {
+      // Keep Firestore doc id as route_id if your data doesn't already include it
+      const data = doc.data()
+      return {
+        // prefer explicit route_id if present; otherwise fall back to doc.id
+        route_id: data.route_id || doc.id,
+        session_id: data.session_id,
+        date: data.date,
+        started_at: data.started_at,
+        ended_at: data.ended_at,
+        total_duration_minutes: data.total_duration_minutes,
+        stops: Array.isArray(data.stops) ? data.stops : [],
+      }
+    })
+
+    // uses "user_route" as the key and returns an array of routes.
+    return res.status(200).json({
+      user_route: routes,
+    })
+  } catch (err) {
+    console.error("GET /api/route error:", err)
+    return res.status(500).json({
+      error: "Internal server error",
+      details: err?.message || String(err),
+    })
+  }
+})
+// Routes Seed api
+// POST /api/route/seed?session_id=7v7muZTl01PK
+// Seeds 2 mock user_route docs if the session_id exists in Firestore
+app.post("/api/route/seed", async (req, res) => {
+  try {
+    const session_id = req.query.session_id || req.body.session_id
+
+    if (!session_id || typeof session_id !== "string" || !session_id.trim()) {
+      return res
+        .status(400)
+        .json({ error: "Missing required parameter: session_id" })
+    }
+
+    const db = admin.firestore()
+
+    // 🔍 Check if this session_id exists under 'sessions' collection
+    const sessionRef = db.collection("sessions").doc(session_id)
+    const sessionDoc = await sessionRef.get()
+
+    if (!sessionDoc.exists) {
+      return res
+        .status(404)
+        .json({ error: `Session ID ${session_id} not found in Firestore.` })
+    }
+
+    // 🧠 Mock data for 2 route documents
+    const routes = [
+      {
+        route_id: `route_${Date.now()}_001`,
+        session_id,
+        date: "2025-09-23",
+        started_at: "2025-09-23T10:15:00+08:00",
+        ended_at: "2025-09-23T13:40:00+08:00",
+        total_duration_minutes: 205,
+        stops: [
+          {
+            stop_id: "stop_001",
+            exhibit_id: "exhibit_AI_001",
+            exhibit_name: "AI Hologram Experience",
+            entered_at: "2025-09-23T10:20:00+08:00",
+            exited_at: "2025-09-23T10:45:00+08:00",
+            duration_mins: 25,
+            lat: 1.334567,
+            lng: 103.742345,
+            name: "Hall A",
+          },
+          {
+            stop_id: "stop_002",
+            exhibit_id: "exhibit_ROBOTICS_003",
+            exhibit_name: "Robotics Showcase",
+            entered_at: "2025-09-23T11:00:00+08:00",
+            exited_at: "2025-09-23T11:40:00+08:00",
+            duration_mins: 40,
+            lat: 1.335678,
+            lng: 103.741234,
+            name: "Hall C",
+          },
+        ],
+      },
+      {
+        route_id: `route_${Date.now()}_002`,
+        session_id,
+        date: "2025-09-23",
+        started_at: "2025-09-23T14:00:00+08:00",
+        ended_at: "2025-09-23T16:00:00+08:00",
+        total_duration_minutes: 120,
+        stops: [
+          {
+            stop_id: "stop_003",
+            exhibit_id: "exhibit_AI_002",
+            exhibit_name: "AI in Daily Life",
+            entered_at: "2025-09-23T14:10:00+08:00",
+            exited_at: "2025-09-23T14:50:00+08:00",
+            duration_mins: 40,
+            lat: 1.336789,
+            lng: 103.743456,
+            name: "Hall D",
+          },
+          {
+            stop_id: "stop_004",
+            exhibit_id: "exhibit_SPACE_001",
+            exhibit_name: "Space Tech Wonders",
+            entered_at: "2025-09-23T15:00:00+08:00",
+            exited_at: "2025-09-23T15:55:00+08:00",
+            duration_mins: 55,
+            lat: 1.337123,
+            lng: 103.744567,
+            name: "Hall E",
+          },
+        ],
+      },
+    ]
+
+    // 🧾 Save both routes to Firestore
+    const batch = db.batch()
+    routes.forEach((route) => {
+      const ref = db.collection("user_route").doc(route.route_id)
+      batch.set(ref, route)
+    })
+    await batch.commit()
+
+    return res.status(200).json({
+      message: `2 mock routes created successfully for session_id: ${session_id}`,
+      user_route: routes,
+    })
+  } catch (err) {
+    console.error("POST /api/route/seed error:", err)
+    return res.status(500).json({
+      error: "Internal server error",
+      details: err?.message || String(err),
+    })
+  }
+})
+
 app.get("/healthz", (_req, res) => res.json({ ok: true, statusCode: Success }))
 
 app.listen(PORT, () => console.log(`Server http://localhost:${PORT}`))
