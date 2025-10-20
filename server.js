@@ -119,13 +119,11 @@ app.get("/api/session", async (req, res) => {
 
         statusCode = Success
         return res.status(statusCode).json({
-          status_code: statusCode,
           ...shaped,
         })
       } else {
         statusCode = NotFound
         return res.status(statusCode).json({
-          status_code: statusCode,
           message: "Session not found",
         })
       }
@@ -147,15 +145,12 @@ app.get("/api/session", async (req, res) => {
 
     statusCode = Success
     return res.status(statusCode).json({
-      status_code: statusCode,
       count: sessions.length,
       sessions,
     })
   } catch (e) {
     statusCode = InternalServerError
-    return res
-      .status(statusCode)
-      .json({ status_code: statusCode, error: e.message })
+    return res.status(statusCode).json({ error: e.message })
   }
 })
 
