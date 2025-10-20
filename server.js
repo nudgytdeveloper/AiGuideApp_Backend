@@ -66,7 +66,6 @@ app.get("/api/session", async (req, res) => {
       if (docSnap.exists) {
         statusCode = Success
         return res.status(statusCode).json({
-          ok: true,
           status_code: statusCode,
           ...docSnap.data(),
         })
