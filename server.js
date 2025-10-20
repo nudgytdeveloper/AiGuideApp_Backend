@@ -13,6 +13,7 @@ import {
 } from "./constant/StatusCode.js"
 import admin from "firebase-admin"
 import { NotEnd } from "./constant/EndReason.js"
+import { withSessionTimes } from "./util/common.js"
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -55,19 +56,71 @@ function generateSessionId() {
 }
 // Session apis
 // List out all sesions or specific session - for Dashboard (single session require ?session={id})
+// app.get("/api/session", async (req, res) => {
+//   let statusCode
+//   try {
+//     const sessionId = (req.query.session || "").trim()
+//     //If a specific session is requested, return only that one (or empty array if not found)
+//     if (sessionId) {
+//       const docSnap = await db.collection("sessions").doc(sessionId).get()
+
+//       if (docSnap.exists) {
+//         statusCode = Success
+//         return res.status(statusCode).json({
+//           status_code: statusCode,
+//           ...docSnap.data(),
+//         })
+//       } else {
+//         statusCode = NotFound
+//         return res.status(statusCode).json({
+//           status_code: statusCode,
+//           message: "Session not found",
+//         })
+//       }
+//     }
+
+//     // Otherwise, list all sessions (with optional ?limit=)
+//     const limit = Math.min(parseInt(req.query.limit || "999", 10), 200)
+//     const snap = await db
+//       .collection("sessions")
+//       .orderBy("start_time")
+//       .limit(limit)
+//       .get()
+
+//     const sessions = snap.docs.map((doc) => ({
+//       id: doc.id,
+//       ...doc.data(),
+//     }))
+//     statusCode = Success
+//     res.status(statusCode).json({
+//       status_code: statusCode,
+//       count: sessions.length,
+//       sessions,
+//     })
+//   } catch (e) {
+//     statusCode = InternalServerError
+//     res.status(statusCode).json({ status_code: statusCode, error: e.message })
+//   }
+// })
 app.get("/api/session", async (req, res) => {
   let statusCode
   try {
     const sessionId = (req.query.session || "").trim()
-    //If a specific session is requested, return only that one (or empty array if not found)
+
     if (sessionId) {
       const docSnap = await db.collection("sessions").doc(sessionId).get()
 
       if (docSnap.exists) {
+        const data = docSnap.data() || {}
+        const shaped = withSessionTimes(
+          { session_id: sessionId, ...data },
+          { offsetMinutes: 8 * 60 }
+        )
+
         statusCode = Success
         return res.status(statusCode).json({
           status_code: statusCode,
-          ...docSnap.data(),
+          ...shaped,
         })
       } else {
         statusCode = NotFound
@@ -78,7 +131,6 @@ app.get("/api/session", async (req, res) => {
       }
     }
 
-    // Otherwise, list all sessions (with optional ?limit=)
     const limit = Math.min(parseInt(req.query.limit || "999", 10), 200)
     const snap = await db
       .collection("sessions")
@@ -86,19 +138,24 @@ app.get("/api/session", async (req, res) => {
       .limit(limit)
       .get()
 
-    const sessions = snap.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }))
+    const sessions = snap.docs.map((doc) =>
+      withSessionTimes(
+        { session_id: doc.id, ...(doc.data() || {}) },
+        { offsetMinutes: 8 * 60 }
+      )
+    )
+
     statusCode = Success
-    res.status(statusCode).json({
+    return res.status(statusCode).json({
       status_code: statusCode,
       count: sessions.length,
       sessions,
     })
   } catch (e) {
     statusCode = InternalServerError
-    res.status(statusCode).json({ status_code: statusCode, error: e.message })
+    return res
+      .status(statusCode)
+      .json({ status_code: statusCode, error: e.message })
   }
 })
 
