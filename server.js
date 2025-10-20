@@ -55,7 +55,7 @@ function generateSessionId() {
 }
 // Session apis
 // List out all sesions or specific session - for Dashboard (single session require ?session={id})
-app.get("/api/session/", async (req, res) => {
+app.get("/api/session", async (req, res) => {
   let statusCode
   try {
     const sessionId = (req.query.session || "").trim()
@@ -73,7 +73,6 @@ app.get("/api/session/", async (req, res) => {
       } else {
         statusCode = NotFound
         return res.status(statusCode).json({
-          ok: false,
           status_code: statusCode,
           message: "Session not found",
         })
@@ -94,16 +93,13 @@ app.get("/api/session/", async (req, res) => {
     }))
     statusCode = Success
     res.status(statusCode).json({
-      ok: true,
       status_code: statusCode,
       count: sessions.length,
       sessions,
     })
   } catch (e) {
     statusCode = InternalServerError
-    res
-      .status(statusCode)
-      .json({ ok: false, status_code: statusCode, error: e.message })
+    res.status(statusCode).json({ status_code: statusCode, error: e.message })
   }
 })
 
