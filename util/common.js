@@ -69,3 +69,24 @@ export const startAfterFromMillis = (millis, admin) => {
     ? admin.firestore.Timestamp.fromMillis(millis)
     : millis
 }
+//return chat_data with all "system" messages removed.
+// Works for both Array and { "0": {...}, "1": {...} } map shapes.
+export function stripSystemMessages(chatData) {
+  if (!chatData) return chatData
+
+  const isSystem = (m) => String(m?.role || "").toLowerCase() === "system"
+
+  if (Array.isArray(chatData)) {
+    return chatData.filter((m) => !isSystem(m))
+  }
+
+  if (typeof chatData === "object") {
+    // Preserve ordering if keys are "0","1","2",...
+    const sorted = Object.entries(chatData)
+      .sort(([a], [b]) => Number(a) - Number(b))
+      .map(([, v]) => v)
+    return sorted.filter((m) => !isSystem(m))
+  }
+
+  return chatData // unknown shape, leave as is
+}

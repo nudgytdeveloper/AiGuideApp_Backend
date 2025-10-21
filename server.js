@@ -16,6 +16,7 @@ import { NotEnd } from "./constant/EndReason.js"
 import {
   getStartTimeMillis,
   startAfterFromMillis,
+  stripSystemMessages,
   withSessionTimes,
 } from "./util/common.js"
 import { Started } from "./constant/SessionStatus.js"
@@ -65,17 +66,20 @@ app.get("/api/session", async (req, res) => {
   let statusCode
   try {
     const sessionId = (req.query.session || "").trim()
+    const filterSystem = req.query.filter === "1" // only filter when ?filter=1
 
     if (sessionId) {
       const docSnap = await db.collection("sessions").doc(sessionId).get()
 
       if (docSnap.exists) {
         const data = docSnap.data() || {}
-        const shaped = withSessionTimes(
+        let shaped = withSessionTimes(
           { session_id: sessionId, ...data },
           { offsetMinutes: 8 * 60 }
         )
-
+        if (filterSystem && shaped.chat_data) {
+          shaped.chat_data = stripSystemMessages(shaped.chat_data)
+        }
         statusCode = Success
         return res.status(statusCode).json({ ...shaped })
       } else {
@@ -88,7 +92,6 @@ app.get("/api/session", async (req, res) => {
     const limit = Number.isFinite(rawLimit) ? rawLimit : 200
 
     const pageTokenRaw = (req.query.page_token || "").trim()
-    // ascendding order..
     let query = db.collection("sessions").orderBy("start_time", "asc")
 
     if (pageTokenRaw) {
@@ -100,21 +103,24 @@ app.get("/api/session", async (req, res) => {
       }
       query = query.startAfter(startAfterFromMillis(tokenMillis, admin))
     }
-    // Fetch one extra page to detect if there’s another page
+
     const snap = await query.limit(limit + 1).get()
-    // Filter out docs that don’t have a valid start_time to keep cursor semantics correct
     const docs = snap.docs.filter((d) => Number.isFinite(getStartTimeMillis(d)))
 
     const hasMore = docs.length > limit
     const pageDocs = hasMore ? docs.slice(0, limit) : docs
 
-    const sessions = pageDocs.map((doc) =>
-      withSessionTimes(
+    const sessions = pageDocs.map((doc) => {
+      let shaped = withSessionTimes(
         { session_id: doc.id, ...(doc.data() || {}) },
         { offsetMinutes: 8 * 60 }
       )
-    )
-    // next_page_token is the start_time of the last item returned
+      if (filterSystem && shaped.chat_data) {
+        shaped.chat_data = stripSystemMessages(shaped.chat_data)
+      }
+      return shaped
+    })
+
     let nextPageToken = null
     if (hasMore) {
       const lastDoc = pageDocs[pageDocs.length - 1]
