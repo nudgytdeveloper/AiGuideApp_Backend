@@ -919,6 +919,27 @@ app.post("/api/route/seed", async (req, res) => {
     })
   }
 })
+// indoor navigation api
+app.get("/api/mappedin-token", async (_req, res) => {
+  try {
+    const body = new URLSearchParams({
+      grant_type: "client_credentials",
+      client_id: process.env.MAPPEDIN_CLIENT_ID,
+      client_secret: process.env.MAPPEDIN_CLIENT_SECRET,
+    })
+
+    const r = await fetch("https://api-gateway.mappedin.com/auth/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body,
+    })
+
+    const json = await r.json() // { access_token, token_type, expires_in, ... }
+    res.json({ accessToken: json.access_token })
+  } catch (e) {
+    res.status(InternalServerError).json({ error: "Failed to fetch token" })
+  }
+})
 
 app.get("/healthz", (_req, res) => res.json({ ok: true, statusCode: Success }))
 
