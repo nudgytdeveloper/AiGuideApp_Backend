@@ -56,3 +56,16 @@ export function withSessionTimes(raw, opts = { offsetMinutes: 8 * 60 }) {
     updated_at: formatISOWithOffset(updated, opts.offsetMinutes),
   }
 }
+export const getStartTimeMillis = (doc) => {
+  const v = doc.get("start_time")
+  if (!v) return null
+  if (typeof v?.toMillis === "function") return v.toMillis() // Firestore Timestamp
+  const n = Number(v)
+  return Number.isFinite(n) ? n : null
+}
+export const startAfterFromMillis = (millis, admin) => {
+  // Works for numeric start_time fields; if you're storing Timestamp, create one.
+  return admin?.firestore?.Timestamp
+    ? admin.firestore.Timestamp.fromMillis(millis)
+    : millis
+}

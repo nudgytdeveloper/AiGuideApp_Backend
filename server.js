@@ -13,7 +13,12 @@ import {
 } from "./constant/StatusCode.js"
 import admin from "firebase-admin"
 import { NotEnd } from "./constant/EndReason.js"
-import { withSessionTimes } from "./util/common.js"
+import {
+  getStartTimeMillis,
+  startAfterFromMillis,
+  withSessionTimes,
+} from "./util/common.js"
+import { Started } from "./constant/SessionStatus.js"
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -56,52 +61,6 @@ function generateSessionId() {
 }
 // Session apis
 // List out all sesions or specific session - for Dashboard (single session require ?session={id})
-// app.get("/api/session", async (req, res) => {
-//   let statusCode
-//   try {
-//     const sessionId = (req.query.session || "").trim()
-//     //If a specific session is requested, return only that one (or empty array if not found)
-//     if (sessionId) {
-//       const docSnap = await db.collection("sessions").doc(sessionId).get()
-
-//       if (docSnap.exists) {
-//         statusCode = Success
-//         return res.status(statusCode).json({
-//           status_code: statusCode,
-//           ...docSnap.data(),
-//         })
-//       } else {
-//         statusCode = NotFound
-//         return res.status(statusCode).json({
-//           status_code: statusCode,
-//           message: "Session not found",
-//         })
-//       }
-//     }
-
-//     // Otherwise, list all sessions (with optional ?limit=)
-//     const limit = Math.min(parseInt(req.query.limit || "999", 10), 200)
-//     const snap = await db
-//       .collection("sessions")
-//       .orderBy("start_time")
-//       .limit(limit)
-//       .get()
-
-//     const sessions = snap.docs.map((doc) => ({
-//       id: doc.id,
-//       ...doc.data(),
-//     }))
-//     statusCode = Success
-//     res.status(statusCode).json({
-//       status_code: statusCode,
-//       count: sessions.length,
-//       sessions,
-//     })
-//   } catch (e) {
-//     statusCode = InternalServerError
-//     res.status(statusCode).json({ status_code: statusCode, error: e.message })
-//   }
-// })
 app.get("/api/session", async (req, res) => {
   let statusCode
   try {
@@ -118,34 +77,55 @@ app.get("/api/session", async (req, res) => {
         )
 
         statusCode = Success
-        return res.status(statusCode).json({
-          ...shaped,
-        })
+        return res.status(statusCode).json({ ...shaped })
       } else {
         statusCode = NotFound
-        return res.status(statusCode).json({
-          message: "Session not found",
-        })
+        return res.status(statusCode).json({ message: "Session not found" })
       }
     }
 
-    const limit = Math.min(parseInt(req.query.limit || "999", 10), 200)
-    const snap = await db
-      .collection("sessions")
-      .orderBy("start_time")
-      .limit(limit)
-      .get()
+    const rawLimit = parseInt(req.query.limit || "200", 10)
+    const limit = Number.isFinite(rawLimit) ? rawLimit : 200
 
-    const sessions = snap.docs.map((doc) =>
+    const pageTokenRaw = (req.query.page_token || "").trim()
+    // ascendding order..
+    let query = db.collection("sessions").orderBy("start_time", "asc")
+
+    if (pageTokenRaw) {
+      const tokenMillis = Number(pageTokenRaw)
+      if (!Number.isFinite(tokenMillis)) {
+        return res
+          .status(BadRequest)
+          .json({ error: "Invalid page_token. Expected millis number/string." })
+      }
+      query = query.startAfter(startAfterFromMillis(tokenMillis, admin))
+    }
+    // Fetch one extra page to detect if there’s another page
+    const snap = await query.limit(limit + 1).get()
+    // Filter out docs that don’t have a valid start_time to keep cursor semantics correct
+    const docs = snap.docs.filter((d) => Number.isFinite(getStartTimeMillis(d)))
+
+    const hasMore = docs.length > limit
+    const pageDocs = hasMore ? docs.slice(0, limit) : docs
+
+    const sessions = pageDocs.map((doc) =>
       withSessionTimes(
         { session_id: doc.id, ...(doc.data() || {}) },
         { offsetMinutes: 8 * 60 }
       )
     )
+    // next_page_token is the start_time of the last item returned
+    let nextPageToken = null
+    if (hasMore) {
+      const lastDoc = pageDocs[pageDocs.length - 1]
+      const lastMillis = getStartTimeMillis(lastDoc)
+      nextPageToken = Number.isFinite(lastMillis) ? String(lastMillis) : null
+    }
 
     statusCode = Success
     return res.status(statusCode).json({
       count: sessions.length,
+      next_page_token: nextPageToken, // pass this into ?page_token= on the next call
       sessions,
     })
   } catch (e) {
@@ -164,6 +144,7 @@ app.post("/api/session/generate", async (req, res) => {
     if (!db) throw new Error("Firestore not initialized")
 
     await db.collection("sessions").doc(payload.session_id).set({
+      status: Started,
       moved_ai_guide: false,
       start_time: FieldValue.serverTimestamp(),
       updated_at: FieldValue.serverTimestamp(),
@@ -179,6 +160,7 @@ app.post("/api/session/generate", async (req, res) => {
     ok: true,
     status_code: Success,
     ...payload,
+    status: Started,
     moved_ai_guide: false,
     chat_data: chatData,
     firestore: { enabled: !!db, persisted, error },
