@@ -301,8 +301,8 @@ app.post("/api/chat", async (req, res) => {
  * Query params (all optional):
  *  - type: "app" | "hologram"
  *  - session_id: string
- *  - start: ISO date (e.g., 2025-09-24T00:00:00Z)  -> created_at >= start
- *  - end:   ISO date (e.g., 2025-09-25T00:00:00Z)  -> created_at <= end
+ *  - start: ISO date (e.g., 2025-10-18T08:51:38+08:00)  -> created_at >= start
+ *  - end:   ISO date (e.g., 2025-10-18T08:51:38+08:00)  -> created_at <= end
  *  - order: "asc" | "desc" (default "desc")
  *  - limit: number (default 20, max 100)
  *  - page_token: cursor string (created_at millis from last page)
@@ -331,14 +331,11 @@ app.get("/api/rating", async (req, res) => {
     if (type) q = q.where("type", "==", type)
     if (session_id) q = q.where("session_id", "==", session_id)
 
-    // Date range filters use created_at (Firestore Timestamp)
     if (start) q = q.where("created_at", ">=", new Date(start))
     if (end) q = q.where("created_at", "<=", new Date(end))
 
-    // Order by created_at (ensure your writes set this field)
     q = q.orderBy("created_at", order === "asc" ? "asc" : "desc")
 
-    // Cursor: pass the previous page's last created_at as millis
     if (page_token) {
       const millis = Number(page_token)
       if (!Number.isNaN(millis)) {
@@ -350,29 +347,35 @@ app.get("/api/rating", async (req, res) => {
 
     const ratings = snap.docs.map((d) => {
       const data = d.data()
+      const createdAt = data.created_at?.toDate
+        ? data.created_at.toDate()
+        : new Date(data.created_at)
+
+      // Convert to ISO string with +08:00 offset
+      const offsetMinutes = 8 * 60
+      const isoCreatedAt = new Date(
+        createdAt.getTime() + offsetMinutes * 60 * 1000
+      )
+        .toISOString()
+        .replace("Z", "+08:00")
+
       return {
         id: d.id,
         ...data,
-        // Make created_at easy to consume; keep original too
-        ...(data.created_at?.toMillis
-          ? { created_at_millis: data.created_at.toMillis() }
-          : {}),
+        created_at: isoCreatedAt,
       }
     })
 
-    // next page token (use last item's created_at)
     let next_page_token = null
     if (ratings.length === pageSize) {
       const last = ratings[ratings.length - 1]
-      const lastMillis =
-        last.created_at_millis ??
-        (last.created_at?.toMillis ? last.created_at.toMillis() : null)
-      if (lastMillis) next_page_token = String(lastMillis)
+      const lastCreated = last.created_at
+      const millis = new Date(lastCreated).getTime()
+      if (millis) next_page_token = String(millis)
     }
 
     return res.status(200).json({ ratings, next_page_token })
   } catch (err) {
-    // returns a helpful link here if Firestore needs an index for filters
     console.error("GET /api/ratings error:", err)
     return res
       .status(500)
