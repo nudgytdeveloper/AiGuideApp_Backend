@@ -604,7 +604,7 @@ app.get("/api/notification", async (req, res) => {
     const notifications = snap.docs.map((doc) => {
       const d = doc.data() || {}
 
-      const payload = {
+      return {
         id: d.id || doc.id,
         title: d.title || "",
         body: d.body || "",
@@ -616,14 +616,12 @@ app.get("/api/notification", async (req, res) => {
         ...(d.location ? { location: d.location } : {}),
         ...(d.deep_link ? { deep_link: d.deep_link } : {}),
       }
-
-      return { notification: payload }
     })
 
     // New page_token: created_at in milliseconds
     const lastItem = notifications[notifications.length - 1]
     const next_page_token = lastItem
-      ? new Date(lastItem.notification.created_at).getTime().toString()
+      ? new Date(lastItem.created_at).getTime().toString()
       : null
 
     res.status(200).json({
