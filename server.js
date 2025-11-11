@@ -21,6 +21,9 @@ import {
 } from "./util/common.js"
 import { Started } from "./constant/SessionStatus.js"
 
+
+const fs = require("fs").promises; // Use the 'promises' version for async/await
+const path = require("path");
 const app = express()
 const PORT = process.env.PORT || 3000
 
@@ -270,12 +273,45 @@ app.post("/api/session/update", async (req, res) => {
 })
 // Chat apis
 app.post("/api/chat", async (req, res) => {
-  const { messages } = req.body
+  const { messages } = req.body;
+
   if (!process.env.OPENAI_API_KEY) {
     return res
       .status(InternalServerError)
-      .json({ error: "OPENAI_API_KEY not set" })
+      .json({ error: "OPENAI_API_KEY not set" });
   }
+
+  let knowledgeContext = "";
+  try {
+    const filePath = path.join(__dirname, "sciencecenter.txt");
+    knowledgeContext = await fs.readFile(filePath, "utf8");
+  } catch (readError) {
+    console.error("Error reading sciencecenter.txt:", readError);
+
+    return res
+      .status(500)
+      .json({ error: "Could not read the knowledge file." });
+  }
+
+  const lastUserMessage = messages.pop(); 
+  const augmentedUserMessage = {
+    role: "user",
+    content: `
+Here is some context from the Science Center website (sciencecenter.txt). Use this information to answer my question.
+---
+CONTEXT:
+${knowledgeContext}
+---
+MY QUESTION:
+${lastUserMessage.content}
+`,
+  };
+
+  const messagesForAPI = [
+    ...messages, 
+    augmentedUserMessage, 
+  ];
+
   const r = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -284,16 +320,17 @@ app.post("/api/chat", async (req, res) => {
     },
     body: JSON.stringify({
       model: "gpt-4o-mini",
-      messages: messages,
+      messages: messagesForAPI, 
       max_tokens: 150,
       temperature: 0.7,
       presence_penalty: 0.1,
       frequency_penalty: 0.1,
     }),
-  })
-  const data = await r.json()
-  res.json(data)
-})
+  });
+
+  const data = await r.json();
+  res.json(data);
+});
 // Rating apis
 /**
  * GET /api/ratings
