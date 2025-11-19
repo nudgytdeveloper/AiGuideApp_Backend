@@ -313,7 +313,7 @@ ${lastUserMessage.content}
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-goog-api-key": "AIzaSyBjvVQej1zlXLSnMqYTyxKCyvuTzZ3jkig",
+      "x-goog-api-key": process.env.GOOGLE_API_KEY,
     },
     body: JSON.stringify({
       contents: messagesForAPI.map(msg => ({
