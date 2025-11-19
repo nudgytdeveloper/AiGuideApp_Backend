@@ -281,6 +281,12 @@ app.post("/api/chat", async (req, res) => {
       .json({ error: "OPENAI_API_KEY not set" })
   }
 
+  if (!process.env.GEMINI_API_KEY) {
+    return res
+      .status(InternalServerError)
+      .json({ error: "GEMINI_API_KEY not set" })
+  }
+
   let knowledgeContext = ""
   try {
     const __filename = fileURLToPath(import.meta.url)
@@ -309,23 +315,26 @@ ${lastUserMessage.content}
 
   const messagesForAPI = [...messages, augmentedUserMessage]
 
-  const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-goog-api-key": "AIzaSyBjvVQej1zlXLSnMqYTyxKCyvuTzZ3jkig",
-    },
-    body: JSON.stringify({
-      contents: messagesForAPI.map(msg => ({
-        role: msg.role === "assistant" ? "model" : "user",
-        parts: [{ text: msg.content }]
-      })),
-      generationConfig: {
-        maxOutputTokens: 150,
-        temperature: 0.6,
-      }
-    }),
-  })
+  const r = await fetch(
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": process.env.GEMINI_API_KEY,
+      },
+      body: JSON.stringify({
+        contents: messagesForAPI.map((msg) => ({
+          role: msg.role === "assistant" ? "model" : "user",
+          parts: [{ text: msg.content }],
+        })),
+        generationConfig: {
+          maxOutputTokens: 150,
+          temperature: 0.6,
+        },
+      }),
+    }
+  )
 
   const data = await r.json()
   res.json(data)
