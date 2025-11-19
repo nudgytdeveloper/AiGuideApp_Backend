@@ -312,19 +312,21 @@ ${lastUserMessage.content}
     augmentedUserMessage, 
   ];
 
-  const r = await fetch("https://api.openai.com/v1/chat/completions", {
+  const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      "x-goog-api-key": "AIzaSyBjvVQej1zlXLSnMqYTyxKCyvuTzZ3jkig",
     },
     body: JSON.stringify({
-      model: "gpt-4o-mini",
-      messages: messagesForAPI, 
-      max_tokens: 150,
-      temperature: 0.7,
-      presence_penalty: 0.1,
-      frequency_penalty: 0.1,
+      contents: messagesForAPI.map(msg => ({
+        role: msg.role === "assistant" ? "model" : "user",
+        parts: [{ text: msg.content }]
+      })),
+      generationConfig: {
+        maxOutputTokens: 150,
+        temperature: 0.6,
+      }
     }),
   });
 
