@@ -315,22 +315,27 @@ ${lastUserMessage.content}
 
   const messagesForAPI = [...messages, augmentedUserMessage]
 
-  const r = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      // "x-goog-api-key": process.env.GEMINI_API_KEY,
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      messages: messagesForAPI,
-      max_tokens: 150,
-      temperature: 0.7,
-      presence_penalty: 0.1,
-      frequency_penalty: 0.1,
-    }),
-  })
+  const r = await fetch(
+    "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": process.env.GEMINI_API_KEY,
+        // Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        contents: messagesForAPI.map((msg) => ({
+          role: msg.role === "assistant" ? "model" : "user",
+          parts: [{ text: msg.content }],
+        })),
+        generationConfig: {
+          maxOutputTokens: 150,
+          temperature: 0.6,
+        },
+      }),
+    }
+  )
 
   const data = await r.json()
   res.json(data)
