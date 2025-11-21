@@ -330,7 +330,7 @@ ${lastUserMessage.content}
           parts: [{ text: msg.content }],
         })),
         generationConfig: {
-          maxOutputTokens: 150,
+          maxOutputTokens: 1024,
           temperature: 0.6,
         },
       }),
