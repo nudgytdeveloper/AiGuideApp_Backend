@@ -281,6 +281,12 @@ app.post("/api/chat", async (req, res) => {
       .json({ error: "OPENAI_API_KEY not set" })
   }
 
+  if (!process.env.GEMINI_API_KEY) {
+    return res
+      .status(InternalServerError)
+      .json({ error: "GEMINI_API_KEY not set" })
+  }
+
   let knowledgeContext = ""
   try {
     const __filename = fileURLToPath(import.meta.url)
@@ -309,25 +315,50 @@ ${lastUserMessage.content}
 
   const messagesForAPI = [...messages, augmentedUserMessage]
 
-  const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-goog-api-key": process.env.GOOGLE_API_KEY,
-    },
-    body: JSON.stringify({
-      contents: messagesForAPI.map(msg => ({
-        role: msg.role === "assistant" ? "model" : "user",
-        parts: [{ text: msg.content }]
-      })),
-      generationConfig: {
-        maxOutputTokens: 150,
-        temperature: 0.6,
-      }
-    }),
-  })
+  const r = await fetch(
+    "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": process.env.GEMINI_API_KEY,
+        // Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        contents: messagesForAPI.map((msg) => ({
+          role: msg.role === "assistant" ? "model" : "user",
+          parts: [{ text: msg.content }],
+        })),
+        generationConfig: {
+          maxOutputTokens: 2000,
+          temperature: 0.4,
+        },
+      }),
+    }
+  )
 
   const data = await r.json()
+
+  // Clean the response text
+  if (data.candidates && data.candidates[0]?.content?.parts) {
+    data.candidates[0].content.parts = data.candidates[0].content.parts.map(part => {
+      if (part.text) {
+        // Remove markdown formatting
+        let cleanedText = part.text
+          .replace(/\*\*/g, '')        // Remove bold **
+          .replace(/\*/g, '')          // Remove italic *
+          .replace(/#{1,6}\s/g, '')    // Remove headers #
+          .replace(/`{1,3}/g, '')      // Remove code blocks `
+          .replace(/_{2}/g, '')        // Remove bold __
+          .replace(/_/g, '')           // Remove italic _
+          .replace(/~{2}/g, '')        // Remove strikethrough ~~
+        
+        return { text: cleanedText }
+      }
+      return part
+    })
+  }
+  
   res.json(data)
 })
 // Rating apis
