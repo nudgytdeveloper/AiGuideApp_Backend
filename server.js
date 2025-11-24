@@ -303,7 +303,7 @@ app.post("/api/chat", async (req, res) => {
   const augmentedUserMessage = {
     role: "user",
     content: `
-Here is some context from the Science Center website (sciencecenter.txt). Use this information to answer my question.
+Here is some context from the Science Center website (sciencecenter.txt). Use this information to answer my question. Be concise with responses.
 ---
 CONTEXT:
 ${knowledgeContext}
