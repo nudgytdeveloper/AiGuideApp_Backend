@@ -23,6 +23,7 @@ import { Started } from "./constant/SessionStatus.js"
 import fs from "fs/promises"
 import path from "path"
 import { fileURLToPath } from "url"
+import { navContext } from "./util/navigationContext.js"
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -296,7 +297,9 @@ app.post("/api/chat", async (req, res) => {
   } catch (readError) {
     console.error("Error reading sciencecenter.txt:", readError)
 
-    return res.status(500).json({ error: "Could not read the knowledge file." })
+    return res
+      .status(InternalServerError)
+      .json({ error: "Could not read the knowledge file." })
   }
 
   const lastUserMessage = messages.pop()
@@ -323,6 +326,7 @@ IMPORTANT: Base your answers on the CONTEXT and QUESTION provided. If asked abou
 ---
 CONTEXT:
 ${knowledgeContext}
+${navContext}
 ---
 MY QUESTION:
 ${lastUserMessage.content}
@@ -357,24 +361,26 @@ ${lastUserMessage.content}
 
   // Clean the response text
   if (data.candidates && data.candidates[0]?.content?.parts) {
-    data.candidates[0].content.parts = data.candidates[0].content.parts.map(part => {
-      if (part.text) {
-        // Remove markdown formatting
-        let cleanedText = part.text
-          .replace(/\*\*/g, '')        // Remove bold **
-          .replace(/\*/g, '')          // Remove italic *
-          .replace(/#{1,6}\s/g, '')    // Remove headers #
-          .replace(/`{1,3}/g, '')      // Remove code blocks `
-          .replace(/_{2}/g, '')        // Remove bold __
-          .replace(/_/g, '')           // Remove italic _
-          .replace(/~{2}/g, '')        // Remove strikethrough ~~
-        
-        return { text: cleanedText }
+    data.candidates[0].content.parts = data.candidates[0].content.parts.map(
+      (part) => {
+        if (part.text) {
+          // Remove markdown formatting
+          let cleanedText = part.text
+            .replace(/\*\*/g, "") // Remove bold **
+            .replace(/\*/g, "") // Remove italic *
+            .replace(/#{1,6}\s/g, "") // Remove headers #
+            .replace(/`{1,3}/g, "") // Remove code blocks `
+            .replace(/_{2}/g, "") // Remove bold __
+            .replace(/_/g, "") // Remove italic _
+            .replace(/~{2}/g, "") // Remove strikethrough ~~
+
+          return { text: cleanedText }
+        }
+        return part
       }
-      return part
-    })
+    )
   }
-  
+
   res.json(data)
 })
 // Rating apis
