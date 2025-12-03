@@ -324,9 +324,8 @@ CONVERSATION MANAGEMENT:
    - "reply": what you would say to the visitor.
    - "nav": either null or an object:
       {
-        "intent": "navigate_to_exhibit",
+        "intent": "navigate",
         "targetDisplayName": string,
-        "targetId": string | null,
         "confidence": number (0-1)
       }
 
