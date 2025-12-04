@@ -83,4 +83,8 @@ export const EXHIBITS = [
     displayName: "Atrium",
     synonyms: ["atrium"],
   },
+  {
+    displayName: "Male Toilet",
+    synonyms: ["toilet"],
+  },
 ]
