@@ -329,10 +329,10 @@ CONVERSATION MANAGEMENT:
         "confidence": number (0-1)
       }
 
-7. "nav" MUST be "navigate" only if the user clearly wants to go to a specific exhibit or location.
+7. "nav" MUST be "navigate" only if the user clearly wants to go to a specific exhibit or location or asking where is the specific exhibit or location.
 8. You have this list of exhibits (with synonyms):
 ${JSON.stringify(EXHIBITS, null, 2)}
-9. When user asks for directions, try to match to one exhibit in this list using synonyms.
+9. When user asks for directions or where is the location, try to match to one exhibit in this list using synonyms.
    - If you are not sure, set "nav" to null.
    - If multiple matches, choose the most likely and mention it in "reply".
 
