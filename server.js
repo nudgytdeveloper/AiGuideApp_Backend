@@ -23,6 +23,7 @@ import { Started } from "./constant/SessionStatus.js"
 import fs from "fs/promises"
 import path from "path"
 import { fileURLToPath } from "url"
+import { EXHIBITS } from "./constant/Exhibits.js"
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -296,7 +297,9 @@ app.post("/api/chat", async (req, res) => {
   } catch (readError) {
     console.error("Error reading sciencecenter.txt:", readError)
 
-    return res.status(500).json({ error: "Could not read the knowledge file." })
+    return res
+      .status(InternalServerError)
+      .json({ error: "Could not read the knowledge file." })
   }
 
   const lastUserMessage = messages.pop()
@@ -317,6 +320,21 @@ CONVERSATION MANAGEMENT:
 3. Only ask one question at a time.
 4. Be engaging and empathetic.
 5. Be curious and drive curiosity about the exhibits in the Science Center. 
+6. ALWAYS respond as JSON with keys:
+   - "reply": what you would say to the visitor.
+   - "nav": either null or an object:
+      {
+        "intent": "navigate",
+        "targetDisplayName": string,
+        "confidence": number (0-1)
+      }
+
+7. "nav" MUST be "navigate" only if the user clearly wants to go to a specific exhibit or location or asking where is the specific exhibit or location.
+8. You have this list of exhibits (with synonyms):
+${JSON.stringify(EXHIBITS, null, 2)}
+9. When user asks for directions or where is the location, try to match to one exhibit in this list using synonyms.
+   - If you are not sure, set "nav" to null.
+   - If multiple matches, choose the most likely and mention it in "reply".
 
 IMPORTANT: Base your answers on the CONTEXT and QUESTION provided. If asked about something not covered, acknowledge this politely.
 
@@ -357,24 +375,26 @@ ${lastUserMessage.content}
 
   // Clean the response text
   if (data.candidates && data.candidates[0]?.content?.parts) {
-    data.candidates[0].content.parts = data.candidates[0].content.parts.map(part => {
-      if (part.text) {
-        // Remove markdown formatting
-        let cleanedText = part.text
-          .replace(/\*\*/g, '')        // Remove bold **
-          .replace(/\*/g, '')          // Remove italic *
-          .replace(/#{1,6}\s/g, '')    // Remove headers #
-          .replace(/`{1,3}/g, '')      // Remove code blocks `
-          .replace(/_{2}/g, '')        // Remove bold __
-          .replace(/_/g, '')           // Remove italic _
-          .replace(/~{2}/g, '')        // Remove strikethrough ~~
-        
-        return { text: cleanedText }
+    data.candidates[0].content.parts = data.candidates[0].content.parts.map(
+      (part) => {
+        if (part.text) {
+          // Remove markdown formatting
+          let cleanedText = part.text
+            .replace(/\*\*/g, "") // Remove bold **
+            .replace(/\*/g, "") // Remove italic *
+            .replace(/#{1,6}\s/g, "") // Remove headers #
+            .replace(/`{1,3}/g, "") // Remove code blocks `
+            .replace(/_{2}/g, "") // Remove bold __
+            .replace(/_/g, "") // Remove italic _
+            .replace(/~{2}/g, "") // Remove strikethrough ~~
+
+          return { text: cleanedText }
+        }
+        return part
       }
-      return part
-    })
+    )
   }
-  
+
   res.json(data)
 })
 // Rating apis
