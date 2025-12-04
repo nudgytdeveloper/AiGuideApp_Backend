@@ -30,6 +30,12 @@ Snow City: To get tickets for Snow City, go to the Snow City website
 Escape @ Science Center Singapoore (E.S.C.): Singaporean/PR Peak: $25, Singaporean/PR Off-Peak: $30
 Escape @ Science Center Singapoore (E.S.C.): Peak Non Singaporean: $35.00, Off-Peak Non Singaporean: $40
 
+When making recommendations about exhibitions and exhibits in Science Center, always do the following:
+-Start by recommending a random exhbition or exhibit highlight in the dataset and explaining why it's interesting
+-If guest is interested in it, offer to help the guest navigate to the exhibit.
+-If guest is not interested in it, ask guest what their interest in. Give 3 examples of interests (e.g. engineering, biology, dinosaurs)
+-When talking about exhibitions, explain the highlights that guests can expect to see when they visit (e.g. Dialog with Time has a lovely exhibit on the Brain and how the different parts are affected by dementia)
+
 Science Centre Singapore: Exhibition & Activity Guide
 1. Feature Exhibitions (Temporary)
 Dinosaurs, Extinctions, Us
@@ -121,6 +127,17 @@ Guided Experience: Led by passionate retirees aged 60 and above, who will take y
 
 My Aging Journey (Activity): Join us for a 15-20 minute session led by our senior guides, as they share personal reflections on their unique journeys through ageing. Following their stories, you’ll take part in a short activity where you can express what happy ageing means to you.
 
+Highlights of the Exhibition: 
+
+*Experiencing Dementia: "WHAT IS DEMENTIA?
+Dementia is an umbrella term for a group of conditions that affect memory, thinking, and the ability to perform daily activities. It is not a natural part of ageing. In fact, dementia does not only affect older adults. Any type of dementia that develops in persons below the age of 65 is known as young-onset dementia. 
+Dementia goes beyond memory loss, impacting speech, thinking, emotions, and behaviour. Persons Living With Dementia (PLWDs) may perceive things differently from others. Step into their shoes and experience dementia from both the perspectives of a PLWD and a Caregiver (CG)."
+
+*Brain: A healthy human brain consists of tens of billions of specialised cells called neurons . Neurons process and transmit information through electrical and chemical signals within the brain as well as between the brain and the rest of the body. In persons with Alzheimer’s Disease (AD),  abnormal buildup of amyloid and tau proteins occur . This build-up leads to the formation of plaques around neurons and tangles within them, disrupting neuron communication and eventually causing them to lose their proper functions and die. Over time, various brain regions shrink. 
+Press the colour-coded regions on the healthy brain to understand the functions of different parts of our brain and how they can be affected in AD.  By learning about the brain and AD, we can movecloser to a future where we can better prevent, treat and hopefully defeat this disease.
+
+*Puberty: learn about changes in the body during puberty and how they affect the body
+
 Timings (Weekdays): 11:40am and 2:40pm
 
 Timings (Weekends/Holidays): 11:40am, 2:40pm and 3:40pm
@@ -136,7 +153,7 @@ Status Alert: The Earthquake Simulator is closed until further notice.
 
 Exhibit Overview: Experience Earth Alive, where you can encounter forces and processes that underlie Earth's changes. The exhibits are organised into spheres that reflect Earth sciences and systems – Geosphere, Hydrosphere and Atmosphere. A fourth section, the Human Sphere, places people into the picture to highlight how Earth changes impact our lives. This exhibition was created in partnership with the Earth Observatory of Singapore (EOS).
 
-Key Exhibits:
+Highlights of the Exhibition: 
 
 GAIA: Be mesmerised by the GAIA, a 5-metre inflatable globe installation by artist Luke Jerram, featuring detailed NASA imagery of the Earth surface.
 
@@ -249,6 +266,12 @@ Reflections from the Pandemic: Marvel at paper dioramas created specially for th
 
 The Plague Doctor: Find out why plague doctors wore these masks hundreds of years ago.
 
+Highlights of the Exhibition: 
+
+*Replication Factory: an exhibit that shows you how a virus replicates itself 
+*Vaccines: an exhibit that discusses how vaccines influenced the Covid 19 crisis, as well as the long history of vaccines and innoculation across different cultures
+*mRNA videos: 3 videos that illustrate how the mRNA technology behind vaccines work
+
 Kinetic Garden
 Location: Entrance (Outdoor)
 
@@ -295,6 +318,11 @@ In this zone, the complexity of the “city” system is dissected into basic co
 
 URBAN FUTURES 
 Explore an array of urban solutions selected for their originality, specificity, or exemplary character. Be amazed by initiatives and innovations undertaken by various cities and their citizens to address the urban challenges that they face.
+
+Exhibition Highlights
+*Enriched by Immigrants: an exhibit that explains how migrants enrich the diversity of countries in which they settle.
+*Rethinking Space to Improve Circulation: how can you redesign urban space to bring work and home closer together and develop new centers of urban life?
+*Urban Data Centers: an increasingly relevant exhibit that discusses the energy usage of data centers in urban areas 
 
 Phobia²: The Science of Fear
 
@@ -381,6 +409,51 @@ Location: Entrance Hall
 Recommended Time: 30 minutes
 Perfect For :People interested in optics and optical illusions
 
+SOME CALL IT SCIENCE 
+
+Step into a space where curiosity is your superpower, asking questions is encouraged and experimentation is a must. Some Call It Science is more than just an exhibition—it’s an invitation to explore, wonder and play your way to new discoveries.
+
+Some Call it Science, We Call it Fun!
+
+Exhibit Highlights 
+
+The "O"
+
+Right at the entrance, under the glowing “O” installation, lies the heart of science engagement. This is where the magic of hands-on activities and live demonstrations happens. 
+
+Get involved, ask away and walk out saying, “Oh... I just learned something amazing!”
+
+Science Kombat: Sci-KO
+
+Gear up for some friendly competition! In this arcade-style game, choose three superpowers from the 9 positive traits highlighted in “Unlock Your Powers” exhibit and battle against a friend or the computer. May the best player win!
+
+Unlock Your Powers: Becoming Extra-Ordinary
+
+Dive into the world of nine individuals who reshaped our world with their curiosity, keen observation skills and ability to connect ideas. Through vibrant comic strips, get to know their “superpowers” that led to groundbreaking innovations and discoveries. 
+
+Interactive Islands
+
+Put the Scientific Method to practice at six different activity stations, designed to spark your curiosity and push your critical thinking skills. Observe, question, experimentcand draw conclusions as you engage with hands-on challenges that’ll have you thinking like a scientist!
+
+Explore:
+• Steel Stacker
+• Polarity Play
+• Light Leaks
+• Curious Combos
+• Seeing Sound
+• Speedy Spinner
+
+Show Us Your Science (SUYS) 
+A platform for Science enthusiasts to showcase their passion by sharing projects, experiments, research or innovative ideas to a wider audience! 
+
+Join us for our SUYS and learn something new! 
+
+
+Date: Permanent
+Location: Hall A
+Recommended Time: 20 - 40 minutes
+Perfect For: Curious people who enjoy experiments
+Cost: Complimentary with Science Centre Singapore admission ticket
 
 4. Science Shows & Demonstrations
 Energy Titans Show
