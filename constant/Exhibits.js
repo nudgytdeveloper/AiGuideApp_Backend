@@ -56,7 +56,7 @@ export const EXHIBITS = [
     synonyms: ["it science", "some call"],
   },
   {
-    displayName: "Eye",
+    displayName: "MEP-04",
     synonyms: ["mind", "eye", "Mind", "mind's", "Mind's", "Eye"],
   },
   {
