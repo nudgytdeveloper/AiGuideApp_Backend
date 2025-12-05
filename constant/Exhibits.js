@@ -80,11 +80,19 @@ export const EXHIBITS = [
     synonyms: ["bioethic"],
   },
   {
-    displayName: "Atrium",
-    synonyms: ["atrium"],
+    displayName: "ATRIUM",
+    synonyms: ["atrium", "ATRIUM"],
   },
   {
     displayName: "Male Toilet",
     synonyms: ["toilet"],
+  },
+  {
+    displayName: "Disabled Toilet",
+    synonyms: ["disabled", "disabled toi", "disabled wash"],
+  },
+  {
+    displayName: "Mechanics Alive",
+    synonyms: ["Mechanic", "Mechanics", "mechanic"],
   },
 ]
