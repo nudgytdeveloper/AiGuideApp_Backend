@@ -32,8 +32,8 @@ export const EXHIBITS = [
     synonyms: ["poo", "bowl"],
   },
   {
-    displayName: "Laser Maze",
-    synonyms: ["laser"],
+    displayName: "Lazer Maze",
+    synonyms: ["laser", "lazer", "lazer maze"],
   },
   {
     displayName: "Phobia",
@@ -41,7 +41,7 @@ export const EXHIBITS = [
   },
   {
     displayName: "Mirror Maze",
-    synonyms: ["mirror"],
+    synonyms: ["mirror", "mirror maze"],
   },
   {
     displayName: "Savage Garden",
@@ -85,7 +85,11 @@ export const EXHIBITS = [
   },
   {
     displayName: "Male Toilet",
-    synonyms: ["toilet"],
+    synonyms: ["toilet", "male"],
+  },
+  {
+    displayName: "Female Toilet",
+    synonyms: ["female toilet", "female"],
   },
   {
     displayName: "Disabled Toilet",
@@ -94,5 +98,25 @@ export const EXHIBITS = [
   {
     displayName: "Mechanics Alive",
     synonyms: ["Mechanic", "Mechanics", "mechanic"],
+  },
+  {
+    displayName: "First Aids Rm",
+    synonyms: ["first aid", "first aids", "aid room"],
+  },
+  {
+    displayName: "Nursing Room",
+    synonyms: ["nursing", "nursing room"],
+  },
+  {
+    displayName: "Maxwell",
+    synonyms: ["maxwell"],
+  },
+  {
+    displayName: "Mendel",
+    synonyms: ["mendel"],
+  },
+  {
+    displayName: "Shop",
+    synonyms: ["shop", "curiosity"],
   },
 ]
