@@ -25,6 +25,7 @@ import path from "path"
 import { fileURLToPath } from "url"
 import { EXHIBITS } from "./constant/Exhibits.js"
 import multer from "multer"
+import { GoogleGenerativeAI } from "@google/generative-ai"
 
 const app = express()
 const PORT = process.env.PORT || 3000
