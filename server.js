@@ -27,6 +27,21 @@ import { EXHIBITS } from "./constant/Exhibits.js"
 
 const app = express()
 const PORT = process.env.PORT || 3000
+const upload = multer({ storage: multer.memoryStorage() })
+const apiKey = process.env.GEMINI_API_KEY
+let genAI = null
+if (apiKey) {
+  genAI = new GoogleGenerativeAI(apiKey)
+}
+
+// Allowed file extensions
+const allowedExtensions = new Set([".jpg", ".jpeg", ".png"])
+
+function allowedFile(filename) {
+  if (!filename) return false
+  const lower = filename.toLowerCase()
+  return Array.from(allowedExtensions).some((ext) => lower.endsWith(ext))
+}
 
 app.use(helmet())
 app.use(cors())
@@ -1011,25 +1026,71 @@ app.post("/api/route/seed", async (req, res) => {
     })
   }
 })
-// indoor navigation api
-app.get("/api/mappedin-token", async (_req, res) => {
+
+app.post("/analyze-frame", upload.single("image"), async (req, res) => {
   try {
-    const body = new URLSearchParams({
-      grant_type: "client_credentials",
-      client_id: process.env.MAPPEDIN_CLIENT_ID,
-      client_secret: process.env.MAPPEDIN_CLIENT_SECRET,
+    if (!genAI) {
+      return res
+        .status(InternalServerError)
+        .json({ error: "Server missing Google API Key" })
+    }
+
+    const file = req.file
+    if (!file) {
+      return res.status(BadRequest).json({ error: "No image file provided" })
+    }
+
+    if (!allowedFile(file.originalname)) {
+      return res.status(BadRequest).json({ error: "Invalid file type" })
+    }
+
+    const prompt =
+      req.body.prompt ||
+      "You are in the Singapore Science Center. Determine what exhibit you are seeing based on the video."
+
+    // Determine mime type
+    let mimeType = "image/jpeg"
+    const fnameLower = file.originalname.toLowerCase()
+    if (fnameLower.endsWith(".png")) {
+      mimeType = "image/png"
+    }
+
+    // Get model
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
     })
 
-    const r = await fetch("https://api-gateway.mappedin.com/auth/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body,
+    // Build request parts: first image, then text prompt
+    const imagePart = {
+      inlineData: {
+        data: file.buffer.toString("base64"),
+        mimeType,
+      },
+    }
+
+    const textPart = {
+      text: prompt,
+    }
+
+    // Call the model (non-streaming)
+    const result = await model.generateContent({
+      contents: [
+        {
+          role: "user",
+          parts: [imagePart, textPart],
+        },
+      ],
     })
 
-    const json = await r.json() // { access_token, token_type, expires_in, ... }
-    res.json({ accessToken: json.access_token })
-  } catch (e) {
-    res.status(InternalServerError).json({ error: "Failed to fetch token" })
+    const response = result.response
+    const text = response.text ? response.text() : ""
+
+    return res.json({ result: text })
+  } catch (err) {
+    console.error("Frame Analysis Error:", err)
+    return res
+      .status(InternalServerError)
+      .json({ error: String(err.message || err) })
   }
 })
 
