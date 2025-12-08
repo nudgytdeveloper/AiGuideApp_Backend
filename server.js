@@ -24,6 +24,7 @@ import fs from "fs/promises"
 import path from "path"
 import { fileURLToPath } from "url"
 import { EXHIBITS } from "./constant/Exhibits.js"
+import multer from "multer"
 
 const app = express()
 const PORT = process.env.PORT || 3000
