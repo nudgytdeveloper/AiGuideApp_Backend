@@ -1031,7 +1031,7 @@ app.post("/api/route/seed", async (req, res) => {
   }
 })
 
-app.post("/analyze-frame", upload.single("image"), async (req, res) => {
+app.post("/api/analyze-frame", upload.single("image"), async (req, res) => {
   try {
     if (!genAI) {
       return res
