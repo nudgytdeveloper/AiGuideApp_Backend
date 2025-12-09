@@ -1050,7 +1050,23 @@ app.post("/api/analyze-frame", upload.single("image"), async (req, res) => {
 
     const prompt =
       req.body.prompt ||
-      "You are in the Singapore Science Center. Determine what exhibit you are seeing based on the video."
+      `
+You are analyzing a photo taken inside the Singapore Science Centre.
+
+Task:
+- Determine which exhibit the visitor is most likely viewing.
+- State the exhibit name if you can.
+- If the exact exhibit name is unclear, give the most likely exhibit or area.
+- If you are not confident, say the image is unclear.
+
+Output rules:
+- Respond in ONE short sentence only.
+- Maximum 30 words.
+- Plain English only.
+- No markdown formatting.
+- No bullet points.
+- Do not add explanations before or after the sentence.
+`.trim()
 
     // Determine mime type
     let mimeType = "image/jpeg"
