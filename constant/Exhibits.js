@@ -1,7 +1,7 @@
 export const EXHIBITS = [
   {
     displayName: "Climate Change",
-    synonyms: ["climate change", "climate"],
+    synonyms: ["climate change", "climate", "climate related"],
   },
   {
     displayName: "Dialogue with Time",
@@ -9,11 +9,11 @@ export const EXHIBITS = [
   },
   {
     displayName: "Earth Alive",
-    synonyms: ["earth", "alive"],
+    synonyms: ["earth", "alive", "earth related"],
   },
   {
     displayName: "Energy Story",
-    synonyms: ["energy", "story"],
+    synonyms: ["energy", "story", "energy related"],
   },
   {
     displayName: "Everyday Science",
@@ -45,7 +45,14 @@ export const EXHIBITS = [
   },
   {
     displayName: "Savage Garden",
-    synonyms: ["garden", "plant", "flower", "savage"],
+    synonyms: [
+      "garden",
+      "plant",
+      "flower",
+      "savage",
+      "plant related",
+      "flower related",
+    ],
   },
   {
     displayName: "Smart Nation PlayScape",
@@ -57,7 +64,7 @@ export const EXHIBITS = [
   },
   {
     displayName: "MEP-04",
-    synonyms: ["mind", "eye", "Mind", "mind's", "Mind's", "Eye"],
+    synonyms: ["mind", "eye", "Mind", "mind's", "Mind's", "Eye", "eye related"],
   },
   {
     displayName: "Tinkering Studio",
@@ -65,7 +72,7 @@ export const EXHIBITS = [
   },
   {
     displayName: "Urban Mutations",
-    synonyms: ["urban", "mutate", "mutation"],
+    synonyms: ["urban", "mutate", "mutation", "urban related"],
   },
   {
     displayName: "Quanta School",
@@ -73,7 +80,7 @@ export const EXHIBITS = [
   },
   {
     displayName: "Animal Zone",
-    synonyms: ["animal", "zone"],
+    synonyms: ["animal", "zone", "animal related"],
   },
   {
     displayName: "Bioethics",
@@ -97,7 +104,7 @@ export const EXHIBITS = [
   },
   {
     displayName: "Mechanics Alive",
-    synonyms: ["Mechanic", "Mechanics", "mechanic"],
+    synonyms: ["Mechanic", "Mechanics", "mechanic", "mechanic related"],
   },
   {
     displayName: "First Aids Rm",
