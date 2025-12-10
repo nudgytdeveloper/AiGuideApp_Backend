@@ -346,13 +346,13 @@ CONVERSATION MANAGEMENT:
         "confidence": number (0-1)
       }
 
-7. "nav" MUST be "navigate" only if the user clearly wants to go to a specific exhibit or location or asking where is the specific exhibit or location.
+7. "nav" MUST be "navigate" only if the user clearly wants to go to a specific exhibit/location or asking where is the specific exhibit/location or explore more abount specific exhibit/location.
 8. You have this list of exhibits (with synonyms):
 ${JSON.stringify(EXHIBITS, null, 2)}
 9. When user asks for directions or where is the location, try to match to one exhibit in this list using synonyms.
-   - If you are not sure, set "nav" to null.
+   - If you are not sure with confidence below 0.5, set "nav" to null.
    - If multiple matches, choose the most likely and mention it in "reply".
-10. Never ask whether you can help me to navigate to location if "nav" is null.
+10. Never reply whether you can help me to navigate or go or heads to location if "nav" is null.
 11. Ask user to click the navigate button beside the message to navigate to location when "nav" is not null and an object.  
 
 IMPORTANT: Base your answers on the CONTEXT and QUESTION provided. If asked about something not covered, acknowledge this politely.
