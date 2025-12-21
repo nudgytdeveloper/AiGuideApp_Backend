@@ -418,6 +418,7 @@ ${lastUserMessage.content}
   res.json(data)
 })
 // Rating apis
+// Rating api - GET use to list out all rating for dashboard
 /**
  * GET /api/ratings
  *
@@ -502,6 +503,57 @@ app.get("/api/rating", async (req, res) => {
     console.error("GET /api/ratings error:", err)
     return res
       .status(500)
+      .json({ error: "Internal error", details: String(err) })
+  }
+})
+// Rating api - POST method which used to add new rating
+/**
+ * POST /api/rating
+ *
+ * Body:
+ * {
+ *   "type": "app" | "hologram",     // optional but recommended
+ *   "session_id": "string",         // required
+ *   "rating": 1..5,                 // required
+ *   "label": "string",              // optional
+ *   "source": "kiosk" | "pwa" | ... // optional
+ * }
+ *
+ * Response:
+ * { "ok": true, "id": "<docId>" }
+ */
+app.post("/api/rating", async (req, res) => {
+  try {
+    const { type, session_id, rating, label, source } = req.body || {}
+
+    const r = Number(rating)
+    if (!session_id || typeof session_id !== "string") {
+      return res.status(BadRequest).json({ error: "session_id is required" })
+    }
+    if (!Number.isFinite(r) || r < 1 || r > 5) {
+      return res
+        .status(BadRequest)
+        .json({ error: "rating must be a number 1..5" })
+    }
+
+    const doc = {
+      type: type || "hologram",
+      session_id,
+      rating: r,
+      label: typeof label === "string" ? label : "",
+      source: typeof source === "string" ? source : "kiosk",
+      created_at: admin.firestore.FieldValue.serverTimestamp(),
+    }
+
+    const ref = await db.collection("ratings").add(doc)
+    return res.status(201).json({
+      message: "Rating added successfully..",
+      id: ref.id,
+    })
+  } catch (err) {
+    console.error("POST /api/rating error:", err)
+    return res
+      .status(InternalServerError)
       .json({ error: "Internal error", details: String(err) })
   }
 })
