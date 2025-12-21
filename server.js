@@ -293,6 +293,54 @@ app.post("/api/session/update", async (req, res) => {
       .json({ ok: false, status_code: statusCode, error: e.message })
   }
 })
+// End a session (AI Guide app only)
+app.post("/api/session/end", async (req, res) => {
+  try {
+    const { session } = req.query
+
+    if (!session) {
+      return res.status(BadRequest).json({
+        status_code: BadRequest,
+        error: "Missing query param ?session=",
+      })
+    }
+    const ref = db.collection("sessions").doc(String(session))
+
+    const updatedData = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref)
+      if (!snap.exists) return null
+      if (snap.data().status === 1) return snap.data()
+
+      tx.update(ref, {
+        status: 1, // ended
+        end_reason: 3, // user finished
+        updated_at: admin.firestore.FieldValue.serverTimestamp(),
+      })
+
+      return {
+        ...snap.data(),
+      }
+    })
+
+    if (!updatedData) {
+      return res.status(NotFound).json({
+        status_code: NotFound,
+        message: "Session does not exist",
+      })
+    }
+
+    return res.status(Success).json({
+      status_code: Success,
+      id: ref.id,
+      data: updatedData,
+    })
+  } catch (e) {
+    return res.status(InternalServerError).json({
+      status_code: InternalServerError,
+      error: e.message,
+    })
+  }
+})
 // Chat apis
 app.post("/api/chat", async (req, res) => {
   const { messages } = req.body
