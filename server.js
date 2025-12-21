@@ -524,7 +524,7 @@ app.get("/api/rating", async (req, res) => {
  */
 app.post("/api/rating", async (req, res) => {
   try {
-    const { type, session_id, rating, label, source } = req.body || {}
+    const { type, session_id, rating } = req.body || {}
 
     const r = Number(rating)
     if (!session_id || typeof session_id !== "string") {
@@ -543,7 +543,6 @@ app.post("/api/rating", async (req, res) => {
       type: type || "hologram",
       session_id,
       score: r,
-      source: typeof source === "string" ? source : "kiosk",
       created_at: admin.firestore.FieldValue.serverTimestamp(),
     }
 
