@@ -309,7 +309,8 @@ app.post("/api/session/end", async (req, res) => {
     const updatedData = await db.runTransaction(async (tx) => {
       const snap = await tx.get(ref)
       if (!snap.exists) return null
-      if (snap.data().status === 1) return snap.data()
+      const data = snap.data()
+      if (data.status === 1) return data
 
       tx.update(ref, {
         status: 1, // ended
@@ -318,7 +319,9 @@ app.post("/api/session/end", async (req, res) => {
       })
 
       return {
-        ...snap.data(),
+        ...data,
+        status: 1,
+        end_reason: 3,
       }
     })
 
