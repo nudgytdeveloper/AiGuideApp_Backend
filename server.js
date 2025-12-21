@@ -296,7 +296,7 @@ app.post("/api/session/update", async (req, res) => {
 // End a session (AI Guide app only)
 app.post("/api/session/end", async (req, res) => {
   try {
-    const { session } = req.query
+    const { session } = req.body
 
     if (!session) {
       return res.status(BadRequest).json({
