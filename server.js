@@ -194,41 +194,45 @@ app.post("/api/session/generate", async (req, res) => {
   })
 })
 
-// Check if a session exists
+// Check if a session exists (AI Guide app only)
 app.get("/api/session/access", async (req, res) => {
-  let statusCode
   try {
     const { session } = req.query
     if (!session) {
-      statusCode = BadRequest
-      return res.status(statusCode).json({
-        ok: false,
-        status_code: statusCode,
+      return res.status(BadRequest).json({
+        status_code: BadRequest,
         error: "Missing query param ?session=",
       })
     }
-    const doc = await db.collection("sessions").doc(session).get()
-    if (!doc.exists) {
-      statusCode = NotFound
-      return res.status(statusCode).json({
-        ok: false,
-        status_code: statusCode,
+    const ref = db.collection("sessions").doc(String(session))
+    // Use a transaction so: check exists + update is consistent
+    const updatedData = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref)
+      if (!snap.exists) return null
+      tx.update(ref, {
+        move_ai_guide: true,
+        updated_at: FieldValue.serverTimestamp(),
+      })
+      // Note: serverTimestamp won't be resolved here yet, but move_ai_guide will.
+      return { ...snap.data(), move_ai_guide: true }
+    })
+
+    if (!updatedData) {
+      return res.status(NotFound).json({
+        status_code: NotFound,
         message: "Session does not exist",
       })
     }
     // TODO: add checking whether session last updated is within 1 hour or not, if not then its invalidate the session
-    statusCode = Success
-    return res.status(statusCode).json({
-      ok: true,
-      status_code: statusCode,
-      id: doc.id,
-      data: doc.data(),
+    return res.status(Success).json({
+      status_code: Success,
+      id: ref.id,
+      data: updatedData,
     })
   } catch (e) {
-    statusCode = InternalServerError
-    res
-      .status(statusCode)
-      .json({ ok: false, status_code: statusCode, error: e.message })
+    return res
+      .status(InternalServerError)
+      .json({ status_code: InternalServerError, error: e.message })
   }
 })
 
