@@ -214,7 +214,7 @@ app.get("/api/session/access", async (req, res) => {
         updated_at: FieldValue.serverTimestamp(),
       })
       // Note: serverTimestamp won't be resolved here yet, but move_ai_guide will.
-      return { ...snap.data(), move_ai_guide: true }
+      return { ...snap.data() }
     })
 
     if (!updatedData) {
