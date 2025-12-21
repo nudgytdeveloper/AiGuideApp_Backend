@@ -210,7 +210,7 @@ app.get("/api/session/access", async (req, res) => {
       const snap = await tx.get(ref)
       if (!snap.exists) return null
       tx.update(ref, {
-        move_ai_guide: true,
+        moved_ai_guide: true,
         updated_at: FieldValue.serverTimestamp(),
       })
       // Note: serverTimestamp won't be resolved here yet, but move_ai_guide will.
