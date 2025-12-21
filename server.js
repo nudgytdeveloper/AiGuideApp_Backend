@@ -536,19 +536,21 @@ app.post("/api/rating", async (req, res) => {
         .json({ error: "rating must be a number 1..5" })
     }
 
+    const feedbackId = await makeFeedbackId()
+
     const doc = {
       type: type || "hologram",
       session_id,
-      rating: r,
+      score: r,
       label: typeof label === "string" ? label : "",
       source: typeof source === "string" ? source : "kiosk",
       created_at: admin.firestore.FieldValue.serverTimestamp(),
     }
 
-    const ref = await db.collection("ratings").add(doc)
+    await db.collection("ratings").doc(feedbackId).set(doc)
     return res.status(201).json({
       message: "Rating added successfully..",
-      id: ref.id,
+      id: feedbackId,
     })
   } catch (err) {
     console.error("POST /api/rating error:", err)
@@ -558,13 +560,22 @@ app.post("/api/rating", async (req, res) => {
   }
 })
 // Seed helpers (unable to move to other file for now due to firebase)
-let feedbackSeq = 1
-export function makeFeedbackId(date = new Date()) {
+async function makeFeedbackId(date = new Date()) {
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, "0")
   const d = String(date.getDate()).padStart(2, "0")
-  const seq = String(feedbackSeq++).padStart(4, "0")
-  return `fb-${y}${m}${d}-${seq}`
+  const dateKey = `${y}${m}${d}`
+
+  const counterRef = db.collection("counters").doc(`feedback-${dateKey}`)
+  const id = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(counterRef)
+    const nextSeq = snap.exists ? snap.data().seq + 1 : 1
+
+    tx.set(counterRef, { seq: nextSeq }, { merge: true })
+
+    return `fb-${dateKey}-${String(nextSeq).padStart(4, "0")}`
+  })
+  return id
 }
 
 export function randInt(min, max) {
