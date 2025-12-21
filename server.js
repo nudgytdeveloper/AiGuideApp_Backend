@@ -539,10 +539,10 @@ app.post("/api/rating", async (req, res) => {
     const feedbackId = await makeFeedbackId()
 
     const doc = {
+      feedback_id: feedbackId,
       type: type || "hologram",
       session_id,
       score: r,
-      label: typeof label === "string" ? label : "",
       source: typeof source === "string" ? source : "kiosk",
       created_at: admin.firestore.FieldValue.serverTimestamp(),
     }
