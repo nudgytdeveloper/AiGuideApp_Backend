@@ -301,7 +301,7 @@ app.post("/api/session/end", async (req, res) => {
     if (!session) {
       return res.status(BadRequest).json({
         status_code: BadRequest,
-        error: "Missing query param ?session=",
+        error: "Missing body param ?session=",
       })
     }
     const ref = db.collection("sessions").doc(String(session))
