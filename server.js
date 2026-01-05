@@ -24,9 +24,26 @@ import fs from "fs/promises"
 import path from "path"
 import { fileURLToPath } from "url"
 import { EXHIBITS } from "./constant/Exhibits.js"
+import multer from "multer"
+import { GoogleGenerativeAI } from "@google/generative-ai"
 
 const app = express()
 const PORT = process.env.PORT || 3000
+const upload = multer({ storage: multer.memoryStorage() })
+const apiKey = process.env.GEMINI_API_KEY
+let genAI = null
+if (apiKey) {
+  genAI = new GoogleGenerativeAI(apiKey)
+}
+
+// Allowed file extensions
+const allowedExtensions = new Set([".jpg", ".jpeg", ".png"])
+
+function allowedFile(filename) {
+  if (!filename) return false
+  const lower = filename.toLowerCase()
+  return Array.from(allowedExtensions).some((ext) => lower.endsWith(ext))
+}
 
 app.use(helmet())
 app.use(cors())
@@ -177,41 +194,45 @@ app.post("/api/session/generate", async (req, res) => {
   })
 })
 
-// Check if a session exists
+// Check if a session exists (AI Guide app only)
 app.get("/api/session/access", async (req, res) => {
-  let statusCode
   try {
     const { session } = req.query
     if (!session) {
-      statusCode = BadRequest
-      return res.status(statusCode).json({
-        ok: false,
-        status_code: statusCode,
+      return res.status(BadRequest).json({
+        status_code: BadRequest,
         error: "Missing query param ?session=",
       })
     }
-    const doc = await db.collection("sessions").doc(session).get()
-    if (!doc.exists) {
-      statusCode = NotFound
-      return res.status(statusCode).json({
-        ok: false,
-        status_code: statusCode,
+    const ref = db.collection("sessions").doc(String(session))
+    // Use a transaction so: check exists + update is consistent
+    const updatedData = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref)
+      if (!snap.exists) return null
+      tx.update(ref, {
+        moved_ai_guide: true,
+        updated_at: FieldValue.serverTimestamp(),
+      })
+      // Note: serverTimestamp won't be resolved here yet, but move_ai_guide will.
+      return { ...snap.data() }
+    })
+
+    if (!updatedData) {
+      return res.status(NotFound).json({
+        status_code: NotFound,
         message: "Session does not exist",
       })
     }
     // TODO: add checking whether session last updated is within 1 hour or not, if not then its invalidate the session
-    statusCode = Success
-    return res.status(statusCode).json({
-      ok: true,
-      status_code: statusCode,
-      id: doc.id,
-      data: doc.data(),
+    return res.status(Success).json({
+      status_code: Success,
+      id: ref.id,
+      data: updatedData,
     })
   } catch (e) {
-    statusCode = InternalServerError
-    res
-      .status(statusCode)
-      .json({ ok: false, status_code: statusCode, error: e.message })
+    return res
+      .status(InternalServerError)
+      .json({ status_code: InternalServerError, error: e.message })
   }
 })
 
@@ -270,6 +291,57 @@ app.post("/api/session/update", async (req, res) => {
     res
       .status(statusCode)
       .json({ ok: false, status_code: statusCode, error: e.message })
+  }
+})
+// End a session (AI Guide app only)
+app.post("/api/session/end", async (req, res) => {
+  try {
+    const { session } = req.body
+
+    if (!session) {
+      return res.status(BadRequest).json({
+        status_code: BadRequest,
+        error: "Missing body param ?session=",
+      })
+    }
+    const ref = db.collection("sessions").doc(String(session))
+
+    const updatedData = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref)
+      if (!snap.exists) return null
+      const data = snap.data()
+      if (data.status === 1) return data
+
+      tx.update(ref, {
+        status: 1, // ended
+        end_reason: 3, // user finished
+        updated_at: admin.firestore.FieldValue.serverTimestamp(),
+      })
+
+      return {
+        ...data,
+        status: 1,
+        end_reason: 3,
+      }
+    })
+
+    if (!updatedData) {
+      return res.status(NotFound).json({
+        status_code: NotFound,
+        message: "Session does not exist",
+      })
+    }
+
+    return res.status(Success).json({
+      status_code: Success,
+      id: ref.id,
+      data: updatedData,
+    })
+  } catch (e) {
+    return res.status(InternalServerError).json({
+      status_code: InternalServerError,
+      error: e.message,
+    })
   }
 })
 // Chat apis
@@ -383,10 +455,11 @@ If they mention tickets: "Tickets! Boring but necessary. Singapore or PR? And ho
 If they ask what's good: "Okay but like... what KIND of good? Loud good? Weird good? 'I can impress people at dinner parties' good?"
 
 IMPORTANT SPEECH CONSTRAINTS:
-1. RESPONSE LENGTH: Keep answers CONCISE (maximum 4-6 sentences). This is a spoken conversation.
-2. STYLE: Be conversational and chatty. Do not read long lists.
-3. CONTEXT: If the answer is long, give a 3-sentence summary and ask if they want to know more details.
-4. FORMATTING: Do not use bullet points, headers, or markdown. Write in plain paragraphs suitable for text-to-speech.
+1. LANGUAGE: if user ask with specific language, please reply with respective language full accordingly, not just translated hello.
+2. RESPONSE LENGTH: Keep answers CONCISE (maximum 4-6 sentences). This is a spoken conversation.
+3. STYLE: Be conversational and chatty. Do not read long lists.
+4. CONTEXT: If the answer is long, give a 3-sentence summary and ask if they want to know more details.
+5. FORMATTING: Do not use bullet points, headers, or markdown. Write in plain paragraphs suitable for text-to-speech.
 
 CONVERSATION MANAGEMENT:
 1. Always ask questions to learn more about the user.
@@ -403,12 +476,14 @@ CONVERSATION MANAGEMENT:
         "confidence": number (0-1)
       }
 
-7. "nav" MUST be "navigate" only if the user clearly wants to go to a specific exhibit or location or asking where is the specific exhibit or location.
+7. "nav" MUST be "navigate" only if the user clearly wants to go to a specific exhibit/location or asking where is the specific exhibit/location or explore more abount specific exhibit/location.
 8. You have this list of exhibits (with synonyms):
 ${JSON.stringify(EXHIBITS, null, 2)}
 9. When user asks for directions or where is the location, try to match to one exhibit in this list using synonyms.
-   - If you are not sure, set "nav" to null.
+   - If you are not sure with confidence below 0.5, set "nav" to null.
    - If multiple matches, choose the most likely and mention it in "reply".
+10. Never reply whether you can help me to navigate or go or heads to location if "nav" is null.
+11. Ask user to click the navigate button beside the message to navigate to location when "nav" is not null and an object.  
 
 IMPORTANT: Base your answers on the CONTEXT and QUESTION provided. If asked about something not covered, acknowledge this politely.
 
@@ -472,6 +547,7 @@ ${lastUserMessage.content}
   res.json(data)
 })
 // Rating apis
+// Rating api - GET use to list out all rating for dashboard
 /**
  * GET /api/ratings
  *
@@ -559,14 +635,75 @@ app.get("/api/rating", async (req, res) => {
       .json({ error: "Internal error", details: String(err) })
   }
 })
+// Rating api - POST method which used to add new rating
+/**
+ * POST /api/rating
+ *
+ * Body:
+ * {
+ *   "type": "app" | "hologram",     // optional but recommended
+ *   "session_id": "string",         // required
+ *   "rating": 1..5,                 // required
+ *   "label": "string",              // optional
+ *   "source": "kiosk" | "pwa" | ... // optional
+ * }
+ *
+ * Response:
+ * { "ok": true, "id": "<docId>" }
+ */
+app.post("/api/rating", async (req, res) => {
+  try {
+    const { type, session_id, rating } = req.body || {}
+
+    const r = Number(rating)
+    if (!session_id || typeof session_id !== "string") {
+      return res.status(BadRequest).json({ error: "session_id is required" })
+    }
+    if (!Number.isFinite(r) || r < 1 || r > 5) {
+      return res
+        .status(BadRequest)
+        .json({ error: "rating must be a number 1..5" })
+    }
+
+    const feedbackId = await makeFeedbackId()
+
+    const doc = {
+      feedback_id: feedbackId,
+      type: type || "hologram",
+      session_id,
+      score: r,
+      created_at: admin.firestore.FieldValue.serverTimestamp(),
+    }
+
+    await db.collection("ratings").doc(feedbackId).set(doc)
+    return res.status(201).json({
+      message: "Rating added successfully..",
+      id: feedbackId,
+    })
+  } catch (err) {
+    console.error("POST /api/rating error:", err)
+    return res
+      .status(InternalServerError)
+      .json({ error: "Internal error", details: String(err) })
+  }
+})
 // Seed helpers (unable to move to other file for now due to firebase)
-let feedbackSeq = 1
-export function makeFeedbackId(date = new Date()) {
+async function makeFeedbackId(date = new Date()) {
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, "0")
   const d = String(date.getDate()).padStart(2, "0")
-  const seq = String(feedbackSeq++).padStart(4, "0")
-  return `fb-${y}${m}${d}-${seq}`
+  const dateKey = `${y}${m}${d}`
+
+  const counterRef = db.collection("counters").doc(`feedback-${dateKey}`)
+  const id = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(counterRef)
+    const nextSeq = snap.exists ? snap.data().seq + 1 : 1
+
+    tx.set(counterRef, { seq: nextSeq }, { merge: true })
+
+    return `fb-${dateKey}-${String(nextSeq).padStart(4, "0")}`
+  })
+  return id
 }
 
 export function randInt(min, max) {
@@ -1085,25 +1222,87 @@ app.post("/api/route/seed", async (req, res) => {
     })
   }
 })
-// indoor navigation api
-app.get("/api/mappedin-token", async (_req, res) => {
+
+app.post("/api/analyze-frame", upload.single("image"), async (req, res) => {
   try {
-    const body = new URLSearchParams({
-      grant_type: "client_credentials",
-      client_id: process.env.MAPPEDIN_CLIENT_ID,
-      client_secret: process.env.MAPPEDIN_CLIENT_SECRET,
+    if (!genAI) {
+      return res
+        .status(InternalServerError)
+        .json({ error: "Server missing Google API Key" })
+    }
+
+    const file = req.file
+    if (!file) {
+      return res.status(BadRequest).json({ error: "No image file provided" })
+    }
+
+    if (!allowedFile(file.originalname)) {
+      return res.status(BadRequest).json({ error: "Invalid file type" })
+    }
+
+    const prompt =
+      req.body.prompt ||
+      `
+You are analyzing a photo taken inside the Singapore Science Centre.
+
+Task:
+- Determine which exhibit the visitor is most likely viewing.
+- State the exhibit name if you can.
+- If the exact exhibit name is unclear, give the most likely exhibit or area.
+- If you are not confident, say the image is unclear.
+
+Output rules:
+- Respond in ONE short sentence only.
+- Maximum 30 words.
+- Plain English only.
+- No markdown formatting.
+- No bullet points.
+- Do not add explanations before or after the sentence.
+`.trim()
+
+    // Determine mime type
+    let mimeType = "image/jpeg"
+    const fnameLower = file.originalname.toLowerCase()
+    if (fnameLower.endsWith(".png")) {
+      mimeType = "image/png"
+    }
+
+    // Get model
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
     })
 
-    const r = await fetch("https://api-gateway.mappedin.com/auth/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body,
+    // Build request parts: first image, then text prompt
+    const imagePart = {
+      inlineData: {
+        data: file.buffer.toString("base64"),
+        mimeType,
+      },
+    }
+
+    const textPart = {
+      text: prompt,
+    }
+
+    // Call the model (non-streaming)
+    const result = await model.generateContent({
+      contents: [
+        {
+          role: "user",
+          parts: [imagePart, textPart],
+        },
+      ],
     })
 
-    const json = await r.json() // { access_token, token_type, expires_in, ... }
-    res.json({ accessToken: json.access_token })
-  } catch (e) {
-    res.status(InternalServerError).json({ error: "Failed to fetch token" })
+    const response = result.response
+    const text = response.text ? response.text() : ""
+
+    return res.json({ result: text })
+  } catch (err) {
+    console.error("Frame Analysis Error:", err)
+    return res
+      .status(InternalServerError)
+      .json({ error: String(err.message || err) })
   }
 })
 
