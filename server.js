@@ -441,6 +441,7 @@ ${lastUserMessage.content}
           parts: [{ text: msg.content }]
         })),
         generationConfig: {
+          responseMimeType: "application/json",
           maxOutputTokens: 300,
           temperature: 0.6
         }
