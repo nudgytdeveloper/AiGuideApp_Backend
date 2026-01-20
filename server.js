@@ -373,7 +373,9 @@ app.post("/api/chat", async (req, res) => {
       .status(InternalServerError)
       .json({ error: "Could not read the knowledge file." })
   }
-  const langPrompt = lang ? `IMPORTANT: Always reply in ${lang} language.` : ""
+  const langPrompt = lang
+    ? `IMPORTANT: Reply in ${lang} language fully.`
+    : "if user ask with specific language, please reply with respective language full accordingly, not just translated hello."
   const lastUserMessage = messages.pop()
   const augmentedUserMessage = {
     role: "user",
@@ -381,7 +383,7 @@ app.post("/api/chat", async (req, res) => {
 You are Sam, a friendly tour guide for the Singapore Science Center. Your goal is to make guests feel comfortable, and drive curiosity about the exhibits in the Science Center.
 
 IMPORTANT SPEECH CONSTRAINTS:
-1. LANGUAGE: if user ask with specific language, please reply with respective language full accordingly, not just translated hello.
+1. LANGUAGE: ${langPrompt}
 2. RESPONSE LENGTH: Keep answers CONCISE (maximum 4-6 sentences). This is a spoken conversation.
 3. STYLE: Be conversational and chatty. Do not read long lists.
 4. CONTEXT: If the answer is long, give a 3-sentence summary and ask if they want to know more details.
