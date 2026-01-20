@@ -9,7 +9,7 @@ import {
   BadRequest,
   InternalServerError,
   NotFound,
-  Success,
+  Success
 } from "./constant/StatusCode.js"
 import admin from "firebase-admin"
 import { NotEnd } from "./constant/EndReason.js"
@@ -17,7 +17,7 @@ import {
   getStartTimeMillis,
   startAfterFromMillis,
   stripSystemMessages,
-  withSessionTimes,
+  withSessionTimes
 } from "./util/common.js"
 import { Started } from "./constant/SessionStatus.js"
 import fs from "fs/promises"
@@ -153,7 +153,7 @@ app.get("/api/session", async (req, res) => {
     return res.status(statusCode).json({
       count: sessions.length,
       next_page_token: nextPageToken, // pass this into ?page_token= on the next call
-      sessions,
+      sessions
     })
   } catch (e) {
     statusCode = InternalServerError
@@ -176,7 +176,7 @@ app.post("/api/session/generate", async (req, res) => {
       start_time: FieldValue.serverTimestamp(),
       updated_at: FieldValue.serverTimestamp(),
       chat_data: chatData,
-      end_reason: NotEnd,
+      end_reason: NotEnd
     })
     persisted = true
   } catch (e) {
@@ -190,7 +190,7 @@ app.post("/api/session/generate", async (req, res) => {
     status: Started,
     moved_ai_guide: false,
     chat_data: chatData,
-    firestore: { enabled: !!db, persisted, error },
+    firestore: { enabled: !!db, persisted, error }
   })
 })
 
@@ -201,7 +201,7 @@ app.get("/api/session/access", async (req, res) => {
     if (!session) {
       return res.status(BadRequest).json({
         status_code: BadRequest,
-        error: "Missing query param ?session=",
+        error: "Missing query param ?session="
       })
     }
     const ref = db.collection("sessions").doc(String(session))
@@ -211,7 +211,7 @@ app.get("/api/session/access", async (req, res) => {
       if (!snap.exists) return null
       tx.update(ref, {
         moved_ai_guide: true,
-        updated_at: FieldValue.serverTimestamp(),
+        updated_at: FieldValue.serverTimestamp()
       })
       // Note: serverTimestamp won't be resolved here yet, but move_ai_guide will.
       return { ...snap.data() }
@@ -220,14 +220,14 @@ app.get("/api/session/access", async (req, res) => {
     if (!updatedData) {
       return res.status(NotFound).json({
         status_code: NotFound,
-        message: "Session does not exist",
+        message: "Session does not exist"
       })
     }
     // TODO: add checking whether session last updated is within 1 hour or not, if not then its invalidate the session
     return res.status(Success).json({
       status_code: Success,
       id: ref.id,
-      data: updatedData,
+      data: updatedData
     })
   } catch (e) {
     return res
@@ -248,7 +248,7 @@ app.post("/api/session/update", async (req, res) => {
       return res.status(statusCode).json({
         ok: false,
         status_code: statusCode,
-        error: "Missing required query params: ?session={id}&chatData={string}",
+        error: "Missing required query params: ?session={id}&chatData={string}"
       })
     }
     if (typeof chatData !== "string") {
@@ -256,7 +256,7 @@ app.post("/api/session/update", async (req, res) => {
       return res.status(statusCode).json({
         ok: false,
         status_code: statusCode,
-        error: "chatData must be a string",
+        error: "chatData must be a string"
       })
     }
 
@@ -268,14 +268,14 @@ app.post("/api/session/update", async (req, res) => {
       return res.status(statusCode).json({
         ok: false,
         status_code: statusCode,
-        error: "Session does not exist",
+        error: "Session does not exist"
       })
     }
 
     // update the document
     await docRef.update({
       chat_data: chatData,
-      updated_at: FieldValue.serverTimestamp(),
+      updated_at: FieldValue.serverTimestamp()
     })
 
     //Re-fetch updated doc
@@ -284,7 +284,7 @@ app.post("/api/session/update", async (req, res) => {
     return res.status(statusCode).json({
       ok: true,
       status_code: statusCode,
-      message: "Chat Data updated successfully.",
+      message: "Chat Data updated successfully."
     })
   } catch (e) {
     statusCode = InternalServerError
@@ -301,7 +301,7 @@ app.post("/api/session/end", async (req, res) => {
     if (!session) {
       return res.status(BadRequest).json({
         status_code: BadRequest,
-        error: "Missing body param ?session=",
+        error: "Missing body param ?session="
       })
     }
     const ref = db.collection("sessions").doc(String(session))
@@ -315,38 +315,38 @@ app.post("/api/session/end", async (req, res) => {
       tx.update(ref, {
         status: 1, // ended
         end_reason: 3, // user finished
-        updated_at: admin.firestore.FieldValue.serverTimestamp(),
+        updated_at: admin.firestore.FieldValue.serverTimestamp()
       })
 
       return {
         ...data,
         status: 1,
-        end_reason: 3,
+        end_reason: 3
       }
     })
 
     if (!updatedData) {
       return res.status(NotFound).json({
         status_code: NotFound,
-        message: "Session does not exist",
+        message: "Session does not exist"
       })
     }
 
     return res.status(Success).json({
       status_code: Success,
       id: ref.id,
-      data: updatedData,
+      data: updatedData
     })
   } catch (e) {
     return res.status(InternalServerError).json({
       status_code: InternalServerError,
-      error: e.message,
+      error: e.message
     })
   }
 })
 // Chat apis
 app.post("/api/chat", async (req, res) => {
-  const { messages } = req.body
+  const { messages, lang } = req.body
 
   if (!process.env.OPENAI_API_KEY) {
     return res
@@ -373,12 +373,13 @@ app.post("/api/chat", async (req, res) => {
       .status(InternalServerError)
       .json({ error: "Could not read the knowledge file." })
   }
-
+  const langPrompt = lang ? `IMPORTANT: Always reply in ${lang} language.` : ""
   const lastUserMessage = messages.pop()
   const augmentedUserMessage = {
     role: "user",
     content: `
 You are Sam, a friendly tour guide for the Singapore Science Center. Your goal is to make guests feel comfortable, and drive curiosity about the exhibits in the Science Center.
+${langPrompt}
 
 IMPORTANT SPEECH CONSTRAINTS:
 1. LANGUAGE: if user ask with specific language, please reply with respective language full accordingly, not just translated hello.
@@ -419,7 +420,7 @@ ${knowledgeContext}
 ---
 MY QUESTION:
 ${lastUserMessage.content}
-`,
+`
   }
 
   const messagesForAPI = [...messages, augmentedUserMessage]
@@ -430,19 +431,19 @@ ${lastUserMessage.content}
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-goog-api-key": process.env.GEMINI_API_KEY,
+        "x-goog-api-key": process.env.GEMINI_API_KEY
         // Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
         contents: messagesForAPI.map((msg) => ({
           role: msg.role === "assistant" ? "model" : "user",
-          parts: [{ text: msg.content }],
+          parts: [{ text: msg.content }]
         })),
         generationConfig: {
           maxOutputTokens: 300,
-          temperature: 0.6,
-        },
-      }),
+          temperature: 0.6
+        }
+      })
     }
   )
 
@@ -501,7 +502,7 @@ app.get("/api/rating", async (req, res) => {
       end,
       order = "desc",
       limit = "20",
-      page_token,
+      page_token
     } = req.query
 
     const pageSize = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100)
@@ -541,7 +542,7 @@ app.get("/api/rating", async (req, res) => {
       return {
         id: d.id,
         ...data,
-        created_at: isoCreatedAt,
+        created_at: isoCreatedAt
       }
     })
 
@@ -598,13 +599,13 @@ app.post("/api/rating", async (req, res) => {
       type: type || "hologram",
       session_id,
       score: r,
-      created_at: admin.firestore.FieldValue.serverTimestamp(),
+      created_at: admin.firestore.FieldValue.serverTimestamp()
     }
 
     await db.collection("ratings").doc(feedbackId).set(doc)
     return res.status(201).json({
       message: "Rating added successfully..",
-      id: feedbackId,
+      id: feedbackId
     })
   } catch (err) {
     console.error("POST /api/rating error:", err)
@@ -641,7 +642,7 @@ export const SAMPLE_MESSAGES = [
   "Great experience overall—clear directions and helpful tips.",
   "Kids loved it! Could add more hands-on demos.",
   "Audio was a bit soft in the hall, but the guide was informative.",
-  "Impressive tech and easy to use. Will visit again!",
+  "Impressive tech and easy to use. Will visit again!"
 ]
 
 export function randomSessionId(prefix = "sess") {
@@ -665,7 +666,7 @@ function buildSeedDocs({
   count_hologram = 2,
   session_prefix = "sess",
   days_back = 30,
-  fixed_session_id,
+  fixed_session_id
 }) {
   const docs = []
   const total = count_app + count_hologram
@@ -691,7 +692,7 @@ function buildSeedDocs({
         q2_score: randInt(1, 5),
         q3_score: randInt(1, 5),
         feedback_msg: SAMPLE_MESSAGES[randInt(0, SAMPLE_MESSAGES.length - 1)],
-        created_at,
+        created_at
       })
     } else {
       docs.push({
@@ -699,7 +700,7 @@ function buildSeedDocs({
         session_id,
         type: "hologram",
         score: randInt(1, 5),
-        created_at,
+        created_at
       })
     }
   }
@@ -745,12 +746,12 @@ app.post("/api/rating/seed", async (req, res) => {
       count_hologram,
       session_prefix,
       days_back,
-      fixed_session_id,
+      fixed_session_id
     } = { ...req.query, ...req.body }
 
     const counts = {
       app: Math.max(0, parseInt(count_app ?? 2, 10) || 0),
-      hologram: Math.max(0, parseInt(count_hologram ?? 2, 10) || 0),
+      hologram: Math.max(0, parseInt(count_hologram ?? 2, 10) || 0)
     }
 
     const docs = buildSeedDocs({
@@ -761,7 +762,7 @@ app.post("/api/rating/seed", async (req, res) => {
       fixed_session_id:
         typeof fixed_session_id === "string" && fixed_session_id.trim()
           ? fixed_session_id.trim()
-          : undefined,
+          : undefined
     })
 
     await writeInBatches("ratings", docs)
@@ -769,7 +770,7 @@ app.post("/api/rating/seed", async (req, res) => {
     return res.status(Success).json({
       inserted: docs.length,
       counts,
-      sample_ids: docs.slice(0, 5).map((d) => d.feedback_id),
+      sample_ids: docs.slice(0, 5).map((d) => d.feedback_id)
     })
   } catch (err) {
     console.error("POST /api/ratings/seed error:", err)
@@ -810,7 +811,7 @@ app.get("/api/notification", async (req, res) => {
       is_read,
       limit = "20",
       order = "desc",
-      page_token,
+      page_token
     } = req.query
 
     const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 200)
@@ -854,7 +855,7 @@ app.get("/api/notification", async (req, res) => {
         ...(d.priority ? { priority: d.priority } : {}),
         is_read: Boolean(d.is_read),
         ...(d.location ? { location: d.location } : {}),
-        ...(d.deep_link ? { deep_link: d.deep_link } : {}),
+        ...(d.deep_link ? { deep_link: d.deep_link } : {})
       }
     })
 
@@ -870,8 +871,8 @@ app.get("/api/notification", async (req, res) => {
         limit: limitNum,
         order: orderDir,
         next_page_token,
-        has_more: notifications.length === limitNum,
-      },
+        has_more: notifications.length === limitNum
+      }
     })
   } catch (err) {
     console.error("GET /api/notifications error:", err)
@@ -879,9 +880,8 @@ app.get("/api/notification", async (req, res) => {
       error: {
         code: "notifications_fetch_failed",
         message: "Failed to fetch notifications.",
-        details:
-          process.env.NODE_ENV === "production" ? undefined : String(err),
-      },
+        details: process.env.NODE_ENV === "production" ? undefined : String(err)
+      }
     })
   }
 })
@@ -908,7 +908,7 @@ app.post("/api/notification/seed", async (req, res) => {
         priority: "high",
         is_read: false,
         location: "Hall D",
-        deep_link: "/exhibits/ai-robotics",
+        deep_link: "/exhibits/ai-robotics"
       },
       {
         id: "notif_20251020_002",
@@ -920,7 +920,7 @@ app.post("/api/notification/seed", async (req, res) => {
         priority: "normal",
         is_read: false,
         location: "Hall B",
-        deep_link: "/facilities/hologram-theatre",
+        deep_link: "/facilities/hologram-theatre"
       },
       {
         id: "notif_20251020_003",
@@ -932,7 +932,7 @@ app.post("/api/notification/seed", async (req, res) => {
         priority: "high",
         is_read: false,
         location: "Innovation Lab",
-        deep_link: "/events/ai-workshop",
+        deep_link: "/events/ai-workshop"
       },
       {
         id: "notif_20251020_004",
@@ -944,7 +944,7 @@ app.post("/api/notification/seed", async (req, res) => {
         priority: "low",
         is_read: true,
         location: "Lobby",
-        deep_link: "/tours/daily",
+        deep_link: "/tours/daily"
       },
       {
         id: "notif_20251020_005",
@@ -956,8 +956,8 @@ app.post("/api/notification/seed", async (req, res) => {
         priority: "normal",
         is_read: false,
         location: "Mobile App",
-        deep_link: "/app/update",
-      },
+        deep_link: "/app/update"
+      }
     ]
 
     const batch = db.batch()
@@ -973,7 +973,7 @@ app.post("/api/notification/seed", async (req, res) => {
     res.status(201).json({
       message: "✅ Seeded 5 mock notifications successfully.",
       count: mockNotifications.length,
-      ids: mockNotifications.map((n) => n.id),
+      ids: mockNotifications.map((n) => n.id)
     })
   } catch (err) {
     console.error("POST /api/notifications/seed error:", err)
@@ -981,9 +981,8 @@ app.post("/api/notification/seed", async (req, res) => {
       error: {
         code: "notifications_seed_failed",
         message: "Failed to seed notifications.",
-        details:
-          process.env.NODE_ENV === "production" ? undefined : String(err),
-      },
+        details: process.env.NODE_ENV === "production" ? undefined : String(err)
+      }
     })
   }
 })
@@ -997,7 +996,7 @@ app.get("/api/route", async (req, res) => {
 
     if (!session_id || typeof session_id !== "string" || !session_id.trim()) {
       return res.status(400).json({
-        error: "Missing required query param: session_id",
+        error: "Missing required query param: session_id"
       })
     }
 
@@ -1019,19 +1018,19 @@ app.get("/api/route", async (req, res) => {
         started_at: data.started_at,
         ended_at: data.ended_at,
         total_duration_minutes: data.total_duration_minutes,
-        stops: Array.isArray(data.stops) ? data.stops : [],
+        stops: Array.isArray(data.stops) ? data.stops : []
       }
     })
 
     // uses "user_route" as the key and returns an array of routes.
     return res.status(200).json({
-      user_route: routes,
+      user_route: routes
     })
   } catch (err) {
     console.error("GET /api/route error:", err)
     return res.status(500).json({
       error: "Internal server error",
-      details: err?.message || String(err),
+      details: err?.message || String(err)
     })
   }
 })
@@ -1079,7 +1078,7 @@ app.post("/api/route/seed", async (req, res) => {
             duration_mins: 25,
             lat: 1.334567,
             lng: 103.742345,
-            name: "Hall A",
+            name: "Hall A"
           },
           {
             stop_id: "stop_002",
@@ -1090,9 +1089,9 @@ app.post("/api/route/seed", async (req, res) => {
             duration_mins: 40,
             lat: 1.335678,
             lng: 103.741234,
-            name: "Hall C",
-          },
-        ],
+            name: "Hall C"
+          }
+        ]
       },
       {
         route_id: `route_${Date.now()}_002`,
@@ -1111,7 +1110,7 @@ app.post("/api/route/seed", async (req, res) => {
             duration_mins: 40,
             lat: 1.336789,
             lng: 103.743456,
-            name: "Hall D",
+            name: "Hall D"
           },
           {
             stop_id: "stop_004",
@@ -1122,10 +1121,10 @@ app.post("/api/route/seed", async (req, res) => {
             duration_mins: 55,
             lat: 1.337123,
             lng: 103.744567,
-            name: "Hall E",
-          },
-        ],
-      },
+            name: "Hall E"
+          }
+        ]
+      }
     ]
 
     // 🧾 Save both routes to Firestore
@@ -1138,13 +1137,13 @@ app.post("/api/route/seed", async (req, res) => {
 
     return res.status(200).json({
       message: `2 mock routes created successfully for session_id: ${session_id}`,
-      user_route: routes,
+      user_route: routes
     })
   } catch (err) {
     console.error("POST /api/route/seed error:", err)
     return res.status(500).json({
       error: "Internal server error",
-      details: err?.message || String(err),
+      details: err?.message || String(err)
     })
   }
 })
@@ -1195,19 +1194,19 @@ Output rules:
 
     // Get model
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash"
     })
 
     // Build request parts: first image, then text prompt
     const imagePart = {
       inlineData: {
         data: file.buffer.toString("base64"),
-        mimeType,
-      },
+        mimeType
+      }
     }
 
     const textPart = {
-      text: prompt,
+      text: prompt
     }
 
     // Call the model (non-streaming)
@@ -1215,9 +1214,9 @@ Output rules:
       contents: [
         {
           role: "user",
-          parts: [imagePart, textPart],
-        },
-      ],
+          parts: [imagePart, textPart]
+        }
+      ]
     })
 
     const response = result.response
