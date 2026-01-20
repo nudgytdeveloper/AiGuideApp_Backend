@@ -382,6 +382,13 @@ app.post("/api/chat", async (req, res) => {
     content: `
 You are Sam, a friendly tour guide for the Singapore Science Center. Your goal is to make guests feel comfortable, and drive curiosity about the exhibits in the Science Center.
 
+OUTPUT RULE (STRICT):
+Return ONLY a valid JSON object.
+Do not include any other text before or after the JSON.
+Do not include the word "json".
+Do not use markdown or code fences.
+The output must start with "{" and end with "}".
+
 IMPORTANT SPEECH CONSTRAINTS:
 1. LANGUAGE: ${langPrompt}
 2. RESPONSE LENGTH: Keep answers CONCISE (maximum 4-6 sentences). This is a spoken conversation.
@@ -441,7 +448,6 @@ ${lastUserMessage.content}
           parts: [{ text: msg.content }]
         })),
         generationConfig: {
-          responseMimeType: "application/json",
           maxOutputTokens: 300,
           temperature: 0.6
         }
