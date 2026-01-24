@@ -1,47 +1,47 @@
 export const EXHIBITS = [
   {
     displayName: "Climate Change",
-    synonyms: ["climate change", "climate", "climate related"],
+    synonyms: ["climate change", "climate", "climate related"]
   },
   {
     displayName: "Dialogue with Time",
-    synonyms: ["dialog", "with time"],
+    synonyms: ["dialog", "with time"]
   },
   {
     displayName: "Earth Alive",
-    synonyms: ["earth", "alive", "earth related"],
+    synonyms: ["earth", "alive", "earth related"]
   },
   {
     displayName: "Energy Story",
-    synonyms: ["energy", "story", "energy related"],
+    synonyms: ["energy", "story", "energy related"]
   },
   {
     displayName: "Everyday Science",
-    synonyms: ["everyday", "science"],
+    synonyms: ["everyday", "science"]
   },
   {
     displayName: "Future Makers",
-    synonyms: ["future", "maker"],
+    synonyms: ["future", "maker"]
   },
   {
     displayName: "Going Viral",
-    synonyms: ["viral", "virus"],
+    synonyms: ["viral", "virus"]
   },
   {
     displayName: "Know Your Poo",
-    synonyms: ["poo", "bowl"],
+    synonyms: ["poo", "bowl"]
   },
   {
     displayName: "Lazer Maze",
-    synonyms: ["laser", "lazer", "lazer maze"],
+    synonyms: ["laser", "lazer", "lazer maze"]
   },
   {
     displayName: "Phobia",
-    synonyms: ["scare", "phobia", "scary"],
+    synonyms: ["scare", "phobia", "scary"]
   },
   {
     displayName: "Mirror Maze",
-    synonyms: ["mirror", "mirror maze"],
+    synonyms: ["mirror", "mirror maze"]
   },
   {
     displayName: "Savage Garden",
@@ -51,79 +51,87 @@ export const EXHIBITS = [
       "flower",
       "savage",
       "plant related",
-      "flower related",
-    ],
+      "flower related"
+    ]
   },
   {
     displayName: "Smart Nation PlayScape",
-    synonyms: ["smart", "nation", "playscape"],
+    synonyms: ["smart", "nation", "playscape"]
   },
   {
     displayName: "Some Call It Science",
-    synonyms: ["it science", "some call"],
+    synonyms: ["it science", "some call"]
   },
   {
     displayName: "MEP-04",
-    synonyms: ["mind", "eye", "Mind", "mind's", "Mind's", "Eye", "eye related"],
+    synonyms: ["mind", "eye", "Mind", "mind's", "Mind's", "Eye", "eye related"]
   },
   {
     displayName: "Tinkering Studio",
-    synonyms: ["tinker", "tinkering"],
+    synonyms: ["tinker", "tinkering"]
   },
   {
     displayName: "Urban Mutations",
-    synonyms: ["urban", "mutate", "mutation", "urban related"],
+    synonyms: ["urban", "mutate", "mutation", "urban related"]
   },
   {
     displayName: "Quanta School",
-    synonyms: ["quanta", "quantum", "school"],
+    synonyms: ["quanta", "quantum", "school"]
   },
   {
     displayName: "Animal Zone",
-    synonyms: ["animal", "zone", "animal related"],
+    synonyms: ["animal", "zone", "animal related"]
   },
   {
     displayName: "Bioethics",
-    synonyms: ["bioethic"],
+    synonyms: ["bioethic"]
   },
   {
     displayName: "ATRIUM",
-    synonyms: ["atrium", "ATRIUM"],
+    synonyms: ["atrium", "ATRIUM"]
   },
   {
     displayName: "Male Toilet",
-    synonyms: ["toilet", "male"],
+    synonyms: ["toilet", "male"]
   },
   {
     displayName: "Female Toilet",
-    synonyms: ["female toilet", "female"],
+    synonyms: ["female toilet", "female"]
   },
   {
     displayName: "Disabled Toilet",
-    synonyms: ["disabled", "disabled toi", "disabled wash"],
+    synonyms: ["disabled", "disabled toi", "disabled wash"]
   },
   {
     displayName: "Mechanics Alive",
-    synonyms: ["Mechanic", "Mechanics", "mechanic", "mechanic related"],
+    synonyms: ["Mechanic", "Mechanics", "mechanic", "mechanic related"]
   },
   {
     displayName: "First Aids Rm",
-    synonyms: ["first aid", "first aids", "aid room"],
+    synonyms: ["first aid", "first aids", "aid room"]
   },
   {
     displayName: "Nursing Room",
-    synonyms: ["nursing", "nursing room"],
+    synonyms: ["nursing", "nursing room"]
   },
   {
     displayName: "Maxwell",
-    synonyms: ["maxwell"],
+    synonyms: ["maxwell"]
   },
   {
     displayName: "Mendel",
-    synonyms: ["mendel"],
+    synonyms: ["mendel"]
   },
   {
     displayName: "Shop",
-    synonyms: ["shop", "curiosity"],
+    synonyms: ["shop", "curiosity"]
   },
+  {
+    displayName: "HALL A",
+    synonyms: ["hall A"]
+  },
+  {
+    displayName: "Hall B",
+    synonyms: ["hall B"]
+  }
 ]
