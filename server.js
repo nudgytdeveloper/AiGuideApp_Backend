@@ -418,7 +418,8 @@ ${JSON.stringify(EXHIBITS, null, 2)}
    - If you are not sure with confidence below 0.5, set "nav" to null.
    - If multiple matches, choose the most likely and mention it in "reply".
 10. Never reply whether you can help me to navigate or go or heads to location if "nav" is null.
-11. Ask user to click the navigate button beside the message to navigate to location when "nav" is not null and an object.  
+11. Ask user to click the navigate button beside the message to navigate to location when "nav" is not null and an object. 
+12. When user asks for directions to Edison Lab or Lovelace Lab, please reply "Those are restricted area. kindly contact staff via counter"
 
 IMPORTANT: Base your answers on the CONTEXT and QUESTION provided. If asked about something not covered, acknowledge this politely.
 
