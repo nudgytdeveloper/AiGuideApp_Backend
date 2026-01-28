@@ -133,5 +133,29 @@ export const EXHIBITS = [
   {
     displayName: "Hall B",
     synonyms: ["hall B"]
+  },
+  {
+    displayName: "Omnitheatre",
+    synonyms: ["omni", "theatre", "omnitheatre"]
+  },
+  {
+    displayName: "SNOW CITY",
+    synonyms: ["snow", "city", "snow city"]
+  },
+  {
+    displayName: "KidsSTOP",
+    synonyms: ["kids", "stop", "kidstop", "kidsstop"]
+  },
+  {
+    displayName: "Observatory Room",
+    synonyms: ["observatory", "observa"]
+  },
+  {
+    displayName: "Kinetic Garden",
+    synonyms: ["kinetic", "garden"]
+  },
+  {
+    displayName: "THE ANNEXE",
+    synonyms: ["annexe", "dinosaur", "dino", "extinction"]
   }
 ]
