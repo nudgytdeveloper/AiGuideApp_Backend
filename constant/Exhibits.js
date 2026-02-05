@@ -1,7 +1,7 @@
 export const EXHIBITS = [
   {
-    displayName: "Climate Change",
-    synonyms: ["climate change", "climate", "climate related"]
+    displayName: "Climate Changed",
+    synonyms: ["climate changed", "climate", "climate related"]
   },
   {
     displayName: "Dialogue with Time",
@@ -157,5 +157,57 @@ export const EXHIBITS = [
   {
     displayName: "THE ANNEXE",
     synonyms: ["annexe", "dinosaur", "dino", "extinction"]
+  },
+  {
+    displayName: "Eco Garden",
+    synonyms: ["Eco", "garden", "ecogarden"]
+  },
+  {
+    displayName: "SLIDING GLASS DOORS",
+    synonyms: ["sliding", "glass doors", "doors"]
+  },
+  {
+    displayName: "Climate Action Show",
+    synonyms: ["Eco", "garden", "ecogarden"]
+  },
+  {
+    displayName: "Coffee Bee",
+    synonyms: ["coffee", "bee"]
+  },
+  {
+    displayName: "Phoenix Indian Restaurant",
+    synonyms: ["phoenix", "indian", "restaurant"]
+  },
+  {
+    displayName: "Courtyard",
+    synonyms: ["courtyard", "court"]
+  },
+  {
+    displayName: "Annex Courtyard",
+    synonyms: ["annex", "annex courtyard"]
+  },
+  {
+    displayName: "Escape Rooms",
+    synonyms: ["escape", "rooms"]
+  },
+  {
+    displayName: "Classroom",
+    synonyms: ["classroom"]
+  },
+  {
+    displayName: "Office",
+    synonyms: ["office"]
+  },
+  {
+    displayName: "WATERWORKS",
+    synonyms: ["waterwork", "water", "waterworks"]
+  },
+  {
+    displayName: "Main Turnstiles",
+    synonyms: ["turnstiles"]
+  },
+  {
+    displayName: "Astro Scientific Centre",
+    synonyms: ["astro", "scientific"]
   }
 ]
